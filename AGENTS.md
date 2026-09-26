@@ -14,7 +14,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 - `export_svg.mjs` prints each emoji's gaps to the frame edges, in px at 128. Keep the top and bottom gaps at 2–3 px
   and the sides at 0 or more; the laser beams leave the frame on purpose.
 - `node check_face.mjs [name ...]` prints how far the eyes, brows, mouth and mustache stay inside the bolt's outline, in
-  px at 128, at the worst frame. Keep them at 0 or more (-0.3 at worst); it leaves out the glasses, tears and blush.
+  px at 128, at the worst frame. Keep them at 0 or more (-0.3 at worst); it leaves out the glasses, heart eyes, tears and blush.
 
 ## Design
 
@@ -28,12 +28,12 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
   edges. `scale` stops at 1.2 so the bolts stay close in size; emoji whose extras or motion need room (dance, sad) come out
   smaller.
 - The eyes are as wide as the bolt allows: `EYE_FIT` in `src/bolt.js` sizes and places each eye kind, 2.1u either
-  side of the middle (`EYE_X`). Eyes, brows and mouths stay inside the outline; glasses may hang past it.
+  side of the middle (`EYE_X`). Eyes, brows and mouths stay inside the outline; glasses and heart eyes may hang past it.
 
 | emoji | what it does |
 |---|---|
 | happy | the kit's happy mood |
-| love | heart eyes that beat (a big thump, then a smaller one, once a second) with a slow bob and sway, hearts rising from low by its top corner; no spin |
+| love | big 😍 heart eyes that beat (a big thump, then a smaller one, once a second) with a slow bob and sway, hearts rising from low by its top corner; no spin |
 | dance | 2.5 jumps a second in a party hat that caps its tip (never above it), tilting left on one jump and right on the next about its bottom point |
 | think | the kit's thinking mood with three big dots close to its top corner |
 | sad | the kit's sad mood, sagging and swaying slowly under a rain cloud as wide as the bolt |

@@ -24,7 +24,7 @@ const report = await page.evaluate(names => {
     for (const [k, fn] of Object.entries(transforms)) Object.defineProperty(window, k, { value: fn, writable: true, configurable: true });
     for (const f of PARTS) {
       drawers[f] = window[f];
-      window[f] = (...args) => { const outer = part; part = f === 'eyes' && args[1].eyes === 'shades' ? 'shades' : f; try { return drawers[f](...args); } finally { part = outer; } };
+      window[f] = (...args) => { const outer = part; part = f === 'eyes' && ['shades', 'heart'].includes(args[1].eyes) ? 'overhang' : f; try { return drawers[f](...args); } finally { part = outer; } };
     }
     const toCanvas = ([x, y]) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
     paint = (pts, o = {}) => {
