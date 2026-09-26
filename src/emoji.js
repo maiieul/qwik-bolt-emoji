@@ -99,6 +99,12 @@ if (new URLSearchParams(location.search).has('clear')) {
       const thumbs = [1, -1].map(side => ({ x: side * 5.8, y: -3.6, rot: side * -.05, side, k: 1.7 }));
       emoji(0, ONE_FRAME, 'happy', { ...BORAT, thumbs }, { lift: -.69, body: () => ({ dy: 0, dx: 0, rot: 0, sq: 0 }) });
     }],
+    scream: [2, .5, t => {
+      const f = Math.floor(t * 25 + 1e-6), jolt = n => hash(f * 1.73 + n * 7.1) * 2 - 1;
+      const hands = [-1, 1].map(side => ({ x: side * 3.45 + .15, y: -3.5, rot: side * -(Math.PI / 2 + .2), side, k: 1.6 }));
+      emoji(t, 2, 'scared', { mouth: 'O', mouthSize: [1, 1.25], mouthDy: -.25, lookX: 0, tintK: 0, emote: null, fright: 1, hands, zap: .2 },
+        { k: 13 * Math.PI / 40, scale: 1.18, body: () => ({ dx: .1 * jolt(1), dy: .05 * jolt(2), rot: .012 * jolt(3), sq: -.03 }) });
+    }],
     ko: [2, .5, t => emoji(t, 2, 'ko', { emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
   };
   for (const [name, [len, , draw]] of Object.entries(E)) { LOOPS['emoji_' + name] = draw; LOOPS['emoji_' + name].len = len; }

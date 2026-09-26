@@ -1,6 +1,6 @@
 # Qwik bolt emoji
 
-The bolt from the Qwik logo as 14 emoji for the Qwik Discord, 13 of them animated.
+The bolt from the Qwik logo as 15 emoji for the Qwik Discord, 14 of them animated.
 
 <p>
 <img src="dist/qwik_happy_animated.gif" width="64" alt="happy">
@@ -16,6 +16,7 @@ The bolt from the Qwik logo as 14 emoji for the Qwik Discord, 13 of them animate
 <img src="dist/qwik_laser_animated.gif" width="64" alt="laser">
 <img src="dist/qwik_thumbsup_animated.gif" width="64" alt="thumbsup">
 <img src="dist/qwik_verynice.png" width="64" alt="verynice">
+<img src="dist/qwik_scream_animated.gif" width="64" alt="scream">
 <img src="dist/qwik_ko_animated.gif" width="64" alt="ko">
 </p>
 
@@ -66,7 +67,7 @@ To scrub a loop, open `bolt.html?loop=emoji_happy` in Chrome, or `bolt.html?loop
 | path | what it is |
 |---|---|
 | `src/bolt.js` | the bolt: shape, colours, face parts, sparks |
-| `src/emoji.js` | the 14 emoji, and the `?clear` mode that renders on a transparent background |
+| `src/emoji.js` | the 15 emoji, and the `?clear` mode that renders on a transparent background |
 | `src/svg_record.js` | records a frame's drawing calls as vector shapes |
 | `src/bolt_sheets.js` | model sheets for the bolt |
 | `bolt.html` | the studio page for the bolt |

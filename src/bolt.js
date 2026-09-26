@@ -2,7 +2,7 @@ const QWIK = {
   white: '#FFFBF4', whiteDk: '#E2DCF2',
   purple: '#AC7EF4', purpleDk: '#7B55CF', purpleLt: '#E2D2FF',
   blue: '#18B6F6', blueDk: '#1F7FC4', blueLt: '#A8E6FF',
-  spark: '#FFE68A',
+  spark: '#FFE68A', fright: '#6C9BEA',
 };
 const SHADOW = .8;
 
@@ -13,7 +13,7 @@ const FACE = { x: -3.72, y: -8.1 };
 const FACE_SPREAD = .3, MOUTH_SIZE = [1, 1.3], EYE_X = 2.1;
 const EYE_FIT = {
   normal: { w: 2.3, h: 1.05, y: -5.9 }, look: { w: 1.75, h: 1, y: -5.6 }, wide: { w: 1.8, h: .78, y: -5.9 },
-  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 1.4, h: 1.15, y: -5.9 },
+  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 1.4, h: 1.15, y: -5.9 }, scared: { w: 1.3, h: 1.05, y: -6.1 },
   x: { w: 1.05, h: .85, y: -5.83, x: 1.85, ink: 1.7 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 2.2, h: 1.45, y: -6.15, x: 1.95 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
 };
 const eyeFit = kind => ({ x: EYE_X, ...EYE_FIT[kind] });
@@ -131,6 +131,7 @@ function bolt(x, y, u, o = {}) {
   const lowerEdge = scalePts([base[4], base[3]], u), inward = [.68 * 1.3 * u, -.73 * 1.3 * u];
   const shade = clipHalf(inner, ...shiftLine(lowerEdge, inward));
   if (shade.length > 2) paint(shade, { fill: tones.white.dk, fillOp: 100, bleed: .03, tex: .6, border: .3, ink: null });
+  if (o.fright) boltFright(u, body, o.fright);
   paint(body, { ink: PAL.ink, sw });
 
   rs('tip');
@@ -277,6 +278,12 @@ function sobFace(u, sw, sob, flow) {
   }
 }
 
+function boltFright(u, body, k) {
+  for (let i = 0; i < 24; i++) {
+    const y = lerp(-15.5, -9.7, i / 23) * u, above = clipHalf(body, [-20 * u, y], [20 * u, y]);
+    if (above.length > 2) paint(above, { wash: QWIK.fright, washOp: 17 * k, ink: null });
+  }
+}
 function boltGloom(u, sw, body, g) {
   const brow = (FACE.y - 1.5) * u, top = clipHalf(body, [-20 * u, brow], [20 * u, brow]);
   if (top.length > 2) paint(top, { fill: PAL.indigo, fillOp: 150 * g, bleed: .08, tex: .5, border: .6, ink: null });

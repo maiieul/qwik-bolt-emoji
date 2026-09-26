@@ -5,7 +5,7 @@ import { cleanEdges, shrink, gifBytes } from './gif_util.mjs';
 
 const BOX = [576, 156, 768, 768], SIZE = 128, FPS = 25;
 // Must match EMOJI_STILL in src/emoji.js.
-const STILL = { happy: .5, love: .08, dance: .2, think: .8, sad: .5, rage: .1, cool: .5, sleepy: .6, cry: .1, wink: 1.4, laser: .3, thumbsup: .08, verynice: 0, ko: .5 };
+const STILL = { happy: .5, love: .08, dance: .2, think: .8, sad: .5, rage: .1, cool: .5, sleepy: .6, cry: .1, wink: 1.4, laser: .3, thumbsup: .08, verynice: 0, scream: .5, ko: .5 };
 const ALL = Object.keys(STILL);
 const names = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
 mkdirSync('out/emoji', { recursive: true });

@@ -45,6 +45,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 | laser | laser eyes and a smirk, with the whole bolt shaking every frame |
 | thumbsup | Borat's "very nice": a mustache, a wide grin and two big floating thumbs, no forearms, pumping up and down in turn 2.5 times a second; the head moves away from the raised thumb |
 | verynice | static: Borat's "very nice", the thumbsup face with both thumbs up at chin height, mirrored |
+| scream | the 😱 face: a blue forehead fading into white, white eyes with small pupils, a tall open mouth and both hands on the cheeks; it shivers |
 | ko | the kit's ko mood, squashed and tilted, with thick X eyes and big dizzy stars circling close above |
 
 ## Invariants
@@ -94,6 +95,7 @@ face, colour and extras options (not views, legs or lid), plus:
 | `mustache` | true for a mustache |
 | `lasers`, `laserFlick` | laser eyes, 0..1, and their shimmer, 0..1 |
 | `wind` | 0..1, air streaks at both sides |
+| `fright` | 0..1, the 😱 blue over the top of the head, fading out above the eyes |
 | `clock`, `loopLen` | the loop's time and length, so sparks fit whole cycles |
 | `emoteAt`, `emoteSize`, `emotePartSize` | `[dx, dy]` in u to move the emote; `[w, h]` to stretch it; a factor that grows each of its shapes in place |
 | `heartScale`, `squint` | the heart eyes' size; 0..1, or `[left, right]` for a wink (both read in `src/clawd.js`) |
