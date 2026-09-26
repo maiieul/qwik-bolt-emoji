@@ -61,6 +61,16 @@ const shiftLine = ([a, b], [dx, dy]) => [[a[0] + dx, a[1] + dy], [b[0] + dx, b[1
 function drawShifted(dy, draw) {
   push(); translate(0, dy); draw(); pop();
 }
+function drawEachScaled(k, draw) {
+  const [paintFlat, inkLineFlat] = [paint, inkLine];
+  const inPlace = pts => {
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    return pts.map(([x, y]) => [cx + (x - cx) * k, cy + (y - cy) * k]);
+  };
+  paint = (pts, o) => paintFlat(inPlace(pts), o);
+  inkLine = (pts, ...rest) => inkLineFlat(inPlace(pts), ...rest);
+  try { draw(); } finally { paint = paintFlat; inkLine = inkLineFlat; }
+}
 
 function boltTones(o) {
   const tone = (col, dk, lt, k) => tintCols({ tint: o.tint, tintK: (o.tintK ?? 1) * k, col, dk, lt });
@@ -172,7 +182,7 @@ function bolt(x, y, u, o = {}) {
     const top = EMOTE_TOP.includes(o.emote), dir = o.flip ? -1 : 1;
     const [atX, atY] = o.emoteAt ?? [0, 0], [sizeX, sizeY] = o.emoteSize ?? [1, 1];
     const ex = x + dir * ((top ? -5.6 : 2.4) + atX) * u, ey = y + lift * u + ((top ? -18.9 : -13.6) * (1 - sq) + atY) * u;
-    drawScaled(sizeX, sizeY, () => emote(o.emote, ex, ey, u * .9, o.emoteK ?? 1, o.emoteAge ?? T));
+    drawScaled(sizeX, sizeY, () => drawEachScaled(o.emotePartSize ?? 1, () => emote(o.emote, ex, ey, u * .9, o.emoteK ?? 1, o.emoteAge ?? T)));
   }
   rs('after');
 }

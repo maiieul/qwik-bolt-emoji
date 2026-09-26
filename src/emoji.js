@@ -95,7 +95,7 @@ if (new URLSearchParams(location.search).has('clear')) {
       emoji(t, 2, 'happy', { eyes: 'normal', mouth: 'beam', mouthDy: .5, mouthSize: [.9, 1], mustache: true, brows: 'up', blush: .3, thumbs, seed: NO_BLINK, zap: 0 },
         { lift: -.8, body: () => ({ dy: 0, dx: sway, rot: 0, sq: 0 }) });
     }],
-    ko: [2, .5, t => emoji(t, 2, 'ko', {}, { k: .4 * Math.PI, lift: -1.4, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
+    ko: [2, .5, t => emoji(t, 2, 'ko', { emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
   };
   for (const [name, [len, , draw]] of Object.entries(E)) { LOOPS['emoji_' + name] = draw; LOOPS['emoji_' + name].len = len; }
   window.EMOJI_NAMES = Object.keys(E);
