@@ -42,7 +42,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 | sleepy | the kit's sleepy mood, floating low and breathing |
 | cry | the 😭 face: shut eyes, tear streams, a wide sobbing mouth; no jumping |
 | wink | a slow wink while the head swings to the side and back |
-| laser | laser eyes, with the whole bolt shaking every frame |
+| laser | laser eyes and a smirk, with the whole bolt shaking every frame |
 | thumbsup | Borat's "very nice": a mustache, a wide grin and two big floating thumbs, no forearms, pumping up and down in turn 2.5 times a second; the head moves away from the raised thumb |
 | ko | the kit's ko mood, squashed and tilted |
 

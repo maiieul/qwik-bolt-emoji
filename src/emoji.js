@@ -82,7 +82,7 @@ if (new URLSearchParams(location.search).has('clear')) {
     }],
     laser: [2, .3, t => {
       const f = Math.floor(t * 25 + 1e-6), jolt = n => hash(f * 1.73 + n * 7.1) * 2 - 1;
-      emoji(t, 2, 'furious', { eyes: 'red', mouth: 'teeth', brows: 1, lid: 0, emote: null, tintK: .6, lasers: 1, laserFlick: f % 2, zap: 1 },
+      emoji(t, 2, 'furious', { eyes: 'red', mouth: 'smirk', brows: 1, lid: 0, emote: null, tintK: .6, lasers: 1, laserFlick: f % 2, zap: 1 },
         { scale: 1.13, lift: -.4, body: () => ({ dx: .65 * jolt(1), dy: .45 * jolt(2), rot: .05 * jolt(3), sq: 0 }) });
     }],
     thumbsup: [2, .08, t => {
