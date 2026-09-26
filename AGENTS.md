@@ -5,7 +5,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 
 ## Verify
 
-- After any change meant to leave the art alone, `npm run check` must end with `dist/ matches out/svg (39 files)`. The
+- After any change meant to leave the art alone, `npm run check` must end with `dist/ matches out/svg`. The
   SVG export is deterministic, so a byte difference means the drawing changed.
 - After a change to the art, run `npm run build` and look at the frames before you report back: render an SVG to PNG
   with sharp (`sharp('dist/qwik_happy.svg', { density: 288 })`) or open it in Chrome.
@@ -44,6 +44,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 | wink | a slow wink while the head swings to the side and back |
 | laser | laser eyes and a smirk, with the whole bolt shaking every frame |
 | thumbsup | Borat's "very nice": a mustache, a wide grin and two big floating thumbs, no forearms, pumping up and down in turn 2.5 times a second; the head moves away from the raised thumb |
+| verynice | static: Borat's "very nice", the thumbsup face with both thumbs up at chin height, mirrored |
 | ko | the kit's ko mood, squashed and tilted, with thick X eyes and big dizzy stars circling close above |
 
 ## Invariants
@@ -55,7 +56,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
   `random()` for motion.
 - `NO_BLINK` is a blink seed with no blink in the first 3 s. A loop longer than 3 s needs another seed.
 - Each emoji's still time lives in `E` in `src/emoji.js` and in `STILL` in `encode_emoji.mjs`; change both.
-- SVG ids start with the emoji's name, so one HTML page can inline all 13.
+- SVG ids start with the emoji's name, so one HTML page can inline them all.
 - Discord takes 128×128 files up to 256 KB; `svg_to_gif.mjs` prints each GIF's size.
 - GIF alpha is on or off, so an emoji can't rely on glows or see-through colours.
 
@@ -66,6 +67,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
    - `mood` is one of the kit's emotions (see `feel()` in ANIMATION_GUIDE.md); `options` are `bolt()` options.
    - `body(t)` returns pose changes in u: `dx`, `dy`, `rot` and `sq` (squash).
    - `scale` resizes the bolt (default 1.2) and `lift` moves it down in u (default -0.5; negative moves it up).
+   - A loop length of one frame (`ONE_FRAME`) makes a static emoji: the build writes its still SVG and a PNG, no GIF.
 2. Set `scale` and `lift` so the gaps that `export_svg.mjs` prints match Verify.
 3. Add the still time to `STILL` in `encode_emoji.mjs`, and a new name to `EMOJI` in `build_page.mjs`.
 4. Run `npm run build` and check the result as in Verify.

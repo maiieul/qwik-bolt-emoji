@@ -3,7 +3,7 @@ import { copyFileSync, readdirSync, readFileSync } from 'node:fs';
 const isCheck = process.argv.includes('--check');
 const sameBytes = (a, b) => { try { return readFileSync(a).equals(readFileSync(b)); } catch { return false; } };
 const pairs = readdirSync('out/svg').flatMap(file => {
-  const [, name, animated, ext] = file.match(/^(\w+)(-animated)?\.(svg|gif)$/) ?? [];
+  const [, name, animated, ext] = file.match(/^(\w+)(-animated)?\.(svg|gif|png)$/) ?? [];
   return name ? [[`out/svg/${file}`, `dist/qwik_${name}${animated ? '_animated' : ''}.${ext}`]] : [];
 });
 if (isCheck) {

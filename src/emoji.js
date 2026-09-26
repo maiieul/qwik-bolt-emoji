@@ -40,7 +40,8 @@ if (new URLSearchParams(location.search).has('clear')) {
   }
   const cycles = (t, len, perSecond) => t * Math.max(1, Math.round(perSecond * len)) / len;
   const wave = (t, len, perSecond, phase = 0) => Math.sin((cycles(t, len, perSecond) + phase) * TAU);
-  const NO_BLINK = .1176;
+  const NO_BLINK = .1176, ONE_FRAME = 1 / 25;
+  const BORAT = { eyes: 'normal', mouth: 'beam', mouthDy: .5, mouthSize: [.9, 1], mustache: true, brows: 'up', blush: .3, seed: NO_BLINK, zap: 0 };
 
   const E = {
     happy: [2, .5, t => emoji(t, 2, 'happy', {}, { scale: 1.17, lift: 0 })],
@@ -92,8 +93,11 @@ if (new URLSearchParams(location.search).has('clear')) {
       };
       const sway = .45 * (lift(.5) - lift(0));
       const thumbs = [1, -1].map((side, i) => ({ x: side * 5.8 - sway, y: lerp(1.6, -6.1, lift(i / 2)), rot: side * -.05, side, k: 1.7 }));
-      emoji(t, 2, 'happy', { eyes: 'normal', mouth: 'beam', mouthDy: .5, mouthSize: [.9, 1], mustache: true, brows: 'up', blush: .3, thumbs, seed: NO_BLINK, zap: 0 },
-        { lift: -.8, body: () => ({ dy: 0, dx: sway, rot: 0, sq: 0 }) });
+      emoji(t, 2, 'happy', { ...BORAT, thumbs }, { lift: -.8, body: () => ({ dy: 0, dx: sway, rot: 0, sq: 0 }) });
+    }],
+    verynice: [ONE_FRAME, 0, () => {
+      const thumbs = [1, -1].map(side => ({ x: side * 5.8, y: -3.6, rot: side * -.05, side, k: 1.7 }));
+      emoji(0, ONE_FRAME, 'happy', { ...BORAT, thumbs }, { lift: -.69, body: () => ({ dy: 0, dx: 0, rot: 0, sq: 0 }) });
     }],
     ko: [2, .5, t => emoji(t, 2, 'ko', { emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
   };

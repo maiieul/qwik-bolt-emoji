@@ -76,8 +76,10 @@ for (const name of names) {
   for (let i = 0; i < n; i++) frames.push(await page.evaluate((e, t) => window.recordFrame('emoji_' + e, t), name, i / FPS));
   const still = build(name, [frames[Math.round(stills[name] * FPS)]]);
   writeFileSync(`out/svg/${name}.svg`, svg(name, still.defs, still.placed[0]));
-  const anim = build(name, frames);
-  writeFileSync(`out/svg/${name}-animated.svg`, svg(name, anim.defs, anim.placed.map((p, i) => frameGroup(p, i, n, lens[name])).join('\n')));
-  console.log(`${name}: ${n} frames, gaps in px ${gapsOf(frames)}`);
+  if (n > 1) {
+    const anim = build(name, frames);
+    writeFileSync(`out/svg/${name}-animated.svg`, svg(name, anim.defs, anim.placed.map((p, i) => frameGroup(p, i, n, lens[name])).join('\n')));
+  }
+  console.log(`${name}: ${n > 1 ? `${n} frames` : 'static'}, gaps in px ${gapsOf(frames)}`);
 }
 await browser.close();

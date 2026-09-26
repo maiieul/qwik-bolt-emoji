@@ -1,7 +1,8 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
-const EMOJI = ['happy', 'love', 'dance', 'think', 'sad', 'rage', 'cool', 'sleepy', 'cry', 'wink', 'laser', 'thumbsup', 'ko'];
-const inline = name => readFileSync(`out/svg/${name}-animated.svg`, 'utf8')
+const EMOJI = ['happy', 'love', 'dance', 'think', 'sad', 'rage', 'cool', 'sleepy', 'cry', 'wink', 'laser', 'thumbsup', 'verynice', 'ko'];
+const svgOf = name => existsSync(`out/svg/${name}-animated.svg`) ? `out/svg/${name}-animated.svg` : `out/svg/${name}.svg`;
+const inline = name => readFileSync(svgOf(name), 'utf8')
   .replace(/ width="128" height="128"/, ` role="img" aria-label="Qwik bolt: ${name}"`)
   .trim();
 
@@ -29,7 +30,7 @@ const html = `<title>Qwik Bolt Emoji</title>
 </style>
 <main>
   <h1>Qwik Bolt Emoji</h1>
-  <p>The bolt from the Qwik logo in thirteen moods. Each one is a vector SVG on a 2 to 3 second loop.</p>
+  <p>The bolt from the Qwik logo in fourteen moods, as vector SVGs. All but one loop every 2 to 3 seconds.</p>
   <ul>
 ${EMOJI.map(n => `    <li>\n${inline(n)}\n      <code>:qwik_${n}:</code>\n    </li>`).join('\n')}
   </ul>
