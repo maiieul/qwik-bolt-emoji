@@ -52,6 +52,7 @@ alone.
 | `node export_svg.mjs [name ...]` | writes the SVGs, for every emoji or the ones named |
 | `node svg_to_gif.mjs [name ...]` | turns the animated SVGs into GIFs |
 | `node pack.mjs [--check]` | copies `out/svg/` into `dist/`, or compares the two |
+| `node check_face.mjs [name ...]` | shows how far each face part stays inside the bolt's outline |
 | `npm run painted -- [name ...]` | writes GIFs and PNGs in the kit's watercolour look to `out/emoji/`, with `preview.png` on Discord's dark and light themes; `REUSE=1` skips the render and re-encodes the frames on disk |
 | `npm run page` | writes one HTML page with all 13 animated SVGs to `out/site/` |
 
@@ -70,5 +71,6 @@ To scrub a loop, open `bolt.html?loop=emoji_happy` in Chrome, or `bolt.html?loop
 | `encode_emoji.mjs`, `render_bolt.mjs` | the watercolour GIFs |
 | `gif_util.mjs` | GIF encoding for both |
 | `build_page.mjs` | the HTML page |
+| `check_face.mjs` | checks that the eyes, brows and mouths stay inside the bolt |
 | everything else | the kit: see [ANIMATION_GUIDE.md](ANIMATION_GUIDE.md) |
 # qwik-bolt-emoji

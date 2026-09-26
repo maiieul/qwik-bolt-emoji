@@ -1,16 +1,22 @@
 {
-  "name": "claude-animation-base",
+  "name": "qwik-bolt-emoji",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "description": "Clawd, painted in p5.brush: a character kit and guide for making hand-painted Clawd animations",
+  "description": "The bolt from the Qwik logo as an emoji set for Discord, built on ClaudeAnimationBase",
   "scripts": {
+    "build": "node export_svg.mjs && node svg_to_gif.mjs && node pack.mjs",
+    "check": "node export_svg.mjs && node svg_to_gif.mjs && node pack.mjs --check",
+    "painted": "node encode_emoji.mjs",
+    "page": "node build_page.mjs",
     "sheet": "node render.mjs --sheet=0,1,2,3,4,5 --out=out/sheet.jpg",
     "video": "node render.mjs --clip --out=out/video.mp4"
   },
   "dependencies": {
+    "gifenc": "^1.0.3",
     "p5": "^2.3.3",
     "p5.brush": "^2.2.3",
-    "puppeteer-core": "^25.11.0"
+    "puppeteer-core": "^25.11.0",
+    "sharp": "^0.35.4"
   }
 }

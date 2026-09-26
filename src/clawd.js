@@ -215,27 +215,37 @@ function blush(u, sw, F, b) {
 // scared, blank, spark, red, heart, x, swirl, dot, shades. o.eyes may be a pair: ['narrow', 'wide'].
 function eyes(u, o, sw, sides, smear = 0) {
   const kinds = Array.isArray(o.eyes) ? o.eyes : o.eyes === 'wink' ? ['happy', 'normal'] : [o.eyes || 'normal', o.eyes || 'normal'];
-  const sqz = clamp(o.squint || 0);
+  const squints = Array.isArray(o.squint) ? o.squint.map(v => clamp(v || 0)) : [clamp(o.squint || 0), clamp(o.squint || 0)];
+  const sqz = Math.min(...squints), fit = kind => ({ x: 2.5, y: -6, w: 1, h: 1, ...o.eyeFit?.(kind) });
   if (smear > .5) { for (const s of sides) inkLine([[s * 2.5 * u - .9 * u, -6 * u], [s * 2.5 * u + .9 * u, -6 * u]], sw * 1.4, PAL.ink, 'ink', 0); return; }
   if (sqz > .8) { for (const s of sides) inkLine([[s * 2.5 * u - .8 * u, -5.9 * u], [s * 2.5 * u + .8 * u, -5.9 * u]], sw, PAL.ink, 'ink', 0); return; }
   if (kinds[0] === 'shades') {   // sunglasses: two dark lenses, a bridge, arms running back along the head
-    const P = pts => pts.map(([a, b]) => [a * u, b * u]);
-    const lens = cx => P([[cx - 1.4, -7.1], [cx + 1.4, -7.1], [cx + 1.3, -6.2], [cx + .8, -5.35], [cx, -5.2], [cx - .8, -5.35], [cx - 1.3, -6.2]]);
-    if (sides.length > 1) {
-      for (const s of [-1, 1]) inkLine(P([[s * 3.9, -6.85], [s * 5, -6.95]]), sw * .8, PAL.ink, 'ink', 0);
-      inkLine(P([[-1.15, -6.75], [0, -7.05], [1.15, -6.75]]), sw * .8, PAL.ink, 'ink', .5);
-    } else inkLine(P([[1.1, -6.85], [-5, -6.95]]), sw * .8, PAL.ink, 'ink', 0);   // profile: the arm runs back to the ear
-    for (const s of sides) {
-      const cx = s * 2.5;
-      paint(lens(cx), { wash: '#2A2740', ink: PAL.ink, sw: sw * .9, curv: .3 });
-      inkLine(P([[cx - .85, -6.35], [cx - .25, -6.85]]), sw * .45, PAL.cream, 'inkfine', 0);   // glint
-      inkLine(P([[cx - .45, -5.85], [cx - .05, -6.2]]), sw * .3, PAL.cream, 'inkfine', 0);
-    }
+    const { w, h } = fit('shades');
+    drawScaled(w, h, () => {
+      const P = pts => pts.map(([a, b]) => [a * u, b * u]);
+      const lens = cx => P([[cx - 1.4, -7.1], [cx + 1.4, -7.1], [cx + 1.3, -6.2], [cx + .8, -5.35], [cx, -5.2], [cx - .8, -5.35], [cx - 1.3, -6.2]]);
+      if (sides.length > 1) {
+        for (const s of [-1, 1]) inkLine(P([[s * 3.9, -6.85], [s * 5, -6.95]]), sw * .8, PAL.ink, 'ink', 0);
+        inkLine(P([[-1.15, -6.75], [0, -7.05], [1.15, -6.75]]), sw * .8, PAL.ink, 'ink', .5);
+      } else inkLine(P([[1.1, -6.85], [-5, -6.95]]), sw * .8, PAL.ink, 'ink', 0);   // profile: the arm runs back to the ear
+      for (const s of sides) {
+        const cx = s * 2.5;
+        paint(lens(cx), { wash: '#2A2740', ink: PAL.ink, sw: sw * .9, curv: .3 });
+        inkLine(P([[cx - .85, -6.35], [cx - .25, -6.85]]), sw * .45, PAL.cream, 'inkfine', 0);   // glint
+        inkLine(P([[cx - .45, -5.85], [cx - .05, -6.2]]), sw * .3, PAL.cream, 'inkfine', 0);
+      }
+    }, [0, -6.2 * u]);
     return;
   }
-  if (sqz > 0) { push(); translate(0, -6 * u); scale(1 + sqz * .15, 1 - sqz); translate(0, 6 * u); }
-  for (const s of sides) { push(); translate(s * 2.5 * u, -6 * u); eye(kinds[s < 0 ? 0 : 1], s, u, o, sw); pop(); }
-  if (sqz > 0) pop();
+  for (const s of sides) {
+    const kind = kinds[s < 0 ? 0 : 1], k = squints[s < 0 ? 0 : 1], { x, y, w, h } = fit(kind);
+    push(); translate(s * x * u, y * u);
+    drawScaled(w, h, () => {
+      if (k > .8) inkLine([[-.6 * u, .3 * u], [0, -.15 * u], [.6 * u, .3 * u]], sw * 1.2, PAL.ink, 'ink', .5);
+      else { if (k > 0) scale(1 + k * .15, 1 - k); eye(kind, s, u, o, sw); }
+    });
+    pop();
+  }
 }
 
 // One eye, drawn around its centre. s = -1 for the left eye, 1 for the right.
@@ -304,7 +314,7 @@ function eye(e, s, u, o, sw) {
       paint(ellPts(0, 0, u * 1.7, u * 1.7, 18), { fill: '#E0283F', fillOp: 110, bleed: .35, ink: null });
       paint(rectPts(-.6 * u, -u, 1.2 * u, 2 * u, u * .05), { wash: '#FF2F4A', ink: PAL.ink, sw: sw * .5 });
       break;
-    case 'heart': paint(heartPts(0, .1 * u, u * .9 * (1 + .1 * pulse(T))), { wash: '#E2476E', ink: PAL.ink, sw: sw * .5 }); break;
+    case 'heart': paint(heartPts(0, .1 * u, u * .9 * (o.heartScale ?? 1 + .1 * pulse(T))), { wash: '#E2476E', ink: PAL.ink, sw: sw * .5 }); break;
     case 'x': lineEye([[-.8, -.8], [.8, .8]], 1, 0); lineEye([[.8, -.8], [-.8, .8]], 1, 0); break;
     case 'swirl': {
       const sp = []; for (let k = 0; k < 16; k++) { const a = k * .7 + T * 6 * s, r = k * .06 * u; sp.push([Math.cos(a) * r, Math.sin(a) * r]); }
@@ -316,8 +326,8 @@ function eye(e, s, u, o, sw) {
 }
 
 // ---------- mouths ----------
-// o, O, smile, grin, flat, wobble, cat, frown, smirk, laugh, open, wail, teeth, tongue, pout, yawn
-function mouth(u, m, sw) {
+// o, O, smile, grin, flat, wobble, cat, frown, smirk, laugh, open, wail, teeth, tongue, pout, yawn, beam, scowl, sob
+function mouth(u, m, sw, k = 1) {
   if (!m) return;
   const P = pts => pts.map(([a, b]) => [a * u, b * u]), dark = '#4A1F2A';
   const line = (pts, w = .8, c = .6) => inkLine(P(pts), sw * w, PAL.ink, 'ink', c);
@@ -354,6 +364,20 @@ function mouth(u, m, sw) {
     case 'yawn':
       paint(ellPts(0, -4.1 * u, u * .6, u * 1.05, 14), { wash: dark, ink: PAL.ink, sw: sw * .6 });
       paint(ellPts(0, -3.45 * u, u * .38, u * .25, 10), { wash: PAL.rose, ink: null }); break;
+    case 'beam':
+      paint(P([[-1.7, -4.75], [-.8, -4.95], [.8, -4.95], [1.7, -4.75], [1.3, -3.9], [.6, -3.45], [-.6, -3.45], [-1.3, -3.9]]), { wash: dark, ink: PAL.ink, sw: sw * .6, curv: .35 });
+      paint(P([[-1.45, -4.8], [1.45, -4.8], [1.28, -4.38], [-1.28, -4.38]]), { wash: PAL.cream, ink: null });
+      paint(ellPts(0, -3.72 * u, .72 * u, .2 * u, 12), { wash: PAL.rose, ink: null });
+      break;
+    case 'scowl':
+      line([[-1.2, -3.95], [-.6, -4.45], [0, -4.62], [.6, -4.45], [1.2, -3.95]], 1.25, .6); break;
+    case 'sob': {
+      const h = lerp(.75, 1.45, clamp(k)), top = -4.75;
+      paint(P([[-1.55, top + .35], [-.7, top], [.7, top], [1.55, top + .35], [1.25, top + h], [.5, top + h + .12], [-.5, top + h + .12], [-1.25, top + h]]), { wash: dark, ink: PAL.ink, sw: sw * .6, curv: .35 });
+      paint(P([[-1.05, top + .12], [1.05, top + .12], [.95, top + .38], [-.95, top + .38]]), { wash: PAL.cream, ink: null });
+      paint(ellPts(0, (top + h - .15) * u, .78 * u, .24 * u, 12), { wash: PAL.rose, ink: null });
+      break;
+    }
   }
 }
 
@@ -491,21 +515,22 @@ function emote(kind, x, y, s, k = 1, age = T) {
     }
     case 'dots': for (let i = 0; i < 3; i++) {
       const ph = frac(age / 1.8), q = backOut(clamp((ph - i * .22) * 6)); if (q < .02) continue;
-      paint(ellPts((i - 1) * 1.3 * s, 0, .42 * s * q, .42 * s * q, 10), { wash: PAL.ink, ink: null });
+      paint(ellPts((i - 1) * 1.3 * s, 0, .42 * s * q, .42 * s * q, 10), { wash: PAL.cream, ink: PAL.ink, sw: sw * .6 });
     } break;
     case 'scribble': {
       const pts = []; for (let i = 0; i < 34; i++) { const a = i * .95, r = (1.1 + .5 * Math.sin(i * 1.7)) * s; pts.push([Math.cos(a) * r * 1.5 + jit(.2 * s), Math.sin(a) * r * .8 + jit(.2 * s)]); }
       inkLine(pts, sw * .8, PAL.ink, 'ink', .7); break;
     }
     case 'music': {
-      const b = Math.sin(age * 5) * .3 * s;
-      push(); translate(0, b); rotate(.1 * Math.sin(age * 5));
-      paint(ellPts(0, 1.2 * s, .7 * s, .5 * s, 12, 0, -.3), { wash: PAL.ink, ink: null });
-      inkLine(P([[.6, 1.1], [.6, -1.6], [1.6, -1]]), sw * .8, PAL.ink, 'ink', 0);
-      pop();
-      const b2 = Math.sin(age * 5 + 2) * .3 * s;
-      paint(ellPts(2.2 * s, 2.2 * s + b2, .45 * s, .33 * s, 10, 0, -.3), { wash: PAL.ink, ink: null });
-      inkLine([[2.6 * s, 2.15 * s + b2], [2.6 * s, .6 * s + b2]], sw * .6, PAL.ink, 'ink', 0);
+      const note = (x0, y0, r, stem, flag, rot) => {
+        push(); translate(x0 * s, y0 * s); rotate(rot);
+        const sx = r * .8, path = flag ? [[sx, 0], [sx, -stem], [sx + .9, -stem + .7]] : [[sx, 0], [sx, -stem]];
+        paint(ribbon(P(path), .34 * s, .3 * s), { wash: PAL.cream, ink: PAL.ink, sw: sw * .5 });
+        paint(ellPts(0, 0, r * s, r * .74 * s, 12, 0, -.3), { wash: PAL.ochre, ink: PAL.ink, sw: sw * .6 });
+        pop();
+      };
+      note(0, 1.2 + Math.sin(age * 5) * .3, .72, 2.7, true, .1 * Math.sin(age * 5));
+      note(2.2, 2.2 + Math.sin(age * 5 + 2) * .3, .5, 1.6, false, 0);
       break;
     }
     case 'swirl': {

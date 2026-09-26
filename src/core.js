@@ -17,7 +17,8 @@ const backOut = x => { x = clamp(x); const s = 1.9; return 1 + (s + 1) * Math.po
 const hash = i => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 const bpOf = t => (t - OFF) / BEAT;
 // Seeded by the boil frame, so linework "boils" at BOIL fps like hand-drawn animation.
-const jit = a => (random() * 2 - 1) * a;
+let SMOOTH = false;
+const jit = a => SMOOTH ? 0 : (random() * 2 - 1) * a;
 // Each boil drawing holds for several frames, so whatever isn't moving must draw the same until the next one. But a moving
 // thing uses a different amount of randomness each frame, which shifts the stream for everything drawn after it and makes
 // that re-boil every frame (jitter). boilSeed(key) restarts the stream from the boil frame and a key (any string or
@@ -200,6 +201,12 @@ function paintAt(pts, o) {
 }
 function inkLine(pts, sw = 1, col = PAL.ink, br = 'ink', curv = .5) {
   centred(pts, (P) => { brush.noFill(); brush.noWash(); brush.noHatch(); brush.set(br, col, sw); brush.spline(P, curv); });
+}
+function drawScaled(sx, sy, draw, [px, py] = [0, 0]) {
+  const [paintFlat, inkLineFlat] = [paint, inkLine], scaled = pts => pts.map(([x, y]) => [px + (x - px) * sx, py + (y - py) * sy]);
+  paint = (pts, o) => paintFlat(scaled(pts), o);
+  inkLine = (pts, ...rest) => inkLineFlat(scaled(pts), ...rest);
+  try { draw(); } finally { paint = paintFlat; inkLine = inkLineFlat; }
 }
 
 // ---------- lettering (drawn on the 2D compositor, under the paper grain) ----------
