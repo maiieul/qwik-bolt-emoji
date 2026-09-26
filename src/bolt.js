@@ -2,7 +2,7 @@ const QWIK = {
   white: '#FFFBF4', whiteDk: '#E2DCF2',
   purple: '#AC7EF4', purpleDk: '#7B55CF', purpleLt: '#E2D2FF',
   blue: '#18B6F6', blueDk: '#1F7FC4', blueLt: '#A8E6FF',
-  spark: '#FFE68A', fright: '#6C9BEA',
+  spark: '#FFE68A', fright: '#3C7CF0',
 };
 const SHADOW = .8;
 
@@ -279,10 +279,10 @@ function sobFace(u, sw, sob, flow) {
 }
 
 function boltFright(u, body, k) {
-  const above = y => clipHalf(body, [-20 * u, y * u], [20 * u, y * u]), solid = above(-11);
+  const above = y => clipHalf(body, [-20 * u, y * u], [20 * u, y * u]), solid = above(-10.6);
   if (solid.length > 2) paint(solid, { wash: QWIK.fright, washOp: 255 * k, ink: null });
   for (let i = 0; i < 12; i++) {
-    const band = above(lerp(-11, -9.6, i / 11));
+    const band = above(lerp(-10.6, -9.5, i / 11));
     if (band.length > 2) paint(band, { wash: QWIK.fright, washOp: 50 * k, ink: null });
   }
 }
