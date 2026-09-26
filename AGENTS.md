@@ -44,7 +44,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 | wink | a slow wink while the head swings to the side and back |
 | laser | laser eyes and a smirk, with the whole bolt shaking every frame |
 | thumbsup | Borat's "very nice": a mustache, a wide grin and two big floating thumbs, no forearms, pumping up and down in turn 2.5 times a second; the head moves away from the raised thumb |
-| ko | the kit's ko mood, squashed and tilted, with big dizzy stars circling close above |
+| ko | the kit's ko mood, squashed and tilted, with thick X eyes and big dizzy stars circling close above |
 
 ## Invariants
 
@@ -102,7 +102,7 @@ Reapply these when you update the kit from upstream:
 
 - `src/core.js`: `SMOOTH` turns the boil off (`jit` returns 0); `drawScaled(sx, sy, draw, pivot)` scales the shapes
   drawn inside `draw` but not their stroke widths.
-- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h }` to place and size each eye kind (for
+- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h, ink }` to place, size and thicken each eye kind (for
   `shades`, `x` is where the lenses sit and the bridge and arms follow); a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
   and `mouth()`'s `k`; cream-and-ochre `music` notes and cream `dots` with ink outlines, so they read on dark
   backgrounds.

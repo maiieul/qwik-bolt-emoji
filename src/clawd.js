@@ -216,7 +216,7 @@ function blush(u, sw, F, b) {
 function eyes(u, o, sw, sides, smear = 0) {
   const kinds = Array.isArray(o.eyes) ? o.eyes : o.eyes === 'wink' ? ['happy', 'normal'] : [o.eyes || 'normal', o.eyes || 'normal'];
   const squints = Array.isArray(o.squint) ? o.squint.map(v => clamp(v || 0)) : [clamp(o.squint || 0), clamp(o.squint || 0)];
-  const sqz = Math.min(...squints), fit = kind => ({ x: 2.5, y: -6, w: 1, h: 1, ...o.eyeFit?.(kind) });
+  const sqz = Math.min(...squints), fit = kind => ({ x: 2.5, y: -6, w: 1, h: 1, ink: 1, ...o.eyeFit?.(kind) });
   if (smear > .5) { for (const s of sides) inkLine([[s * 2.5 * u - .9 * u, -6 * u], [s * 2.5 * u + .9 * u, -6 * u]], sw * 1.4, PAL.ink, 'ink', 0); return; }
   if (sqz > .8) { for (const s of sides) inkLine([[s * 2.5 * u - .8 * u, -5.9 * u], [s * 2.5 * u + .8 * u, -5.9 * u]], sw, PAL.ink, 'ink', 0); return; }
   if (kinds[0] === 'shades') {   // sunglasses: two dark lenses, a bridge, arms running back along the head
@@ -238,11 +238,11 @@ function eyes(u, o, sw, sides, smear = 0) {
     return;
   }
   for (const s of sides) {
-    const kind = kinds[s < 0 ? 0 : 1], k = squints[s < 0 ? 0 : 1], { x, y, w, h } = fit(kind);
+    const kind = kinds[s < 0 ? 0 : 1], k = squints[s < 0 ? 0 : 1], { x, y, w, h, ink } = fit(kind);
     push(); translate(s * x * u, y * u);
     drawScaled(w, h, () => {
       if (k > .8) inkLine([[-.6 * u, .3 * u], [0, -.15 * u], [.6 * u, .3 * u]], sw * 1.2, PAL.ink, 'ink', .5);
-      else { if (k > 0) scale(1 + k * .15, 1 - k); eye(kind, s, u, o, sw); }
+      else { if (k > 0) scale(1 + k * .15, 1 - k); eye(kind, s, u, o, sw * ink); }
     });
     pop();
   }
