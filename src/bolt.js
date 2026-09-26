@@ -147,7 +147,7 @@ function bolt(x, y, u, o = {}) {
     pop();
   }
   rs('hat');
-  if (o.hat) { push(); translate(base[1][0] * u, base[1][1] * u); rotate(-.25); scale(.6); translate(0, 7.7 * u); hat(u, o.hat, sw / .6); pop(); }
+  if (o.hat) { push(); translate(base[1][0] * u, base[1][1] * u); rotate(-.47); scale(.75); translate(0, 12.8 * u); hat(u, o.hat, sw / .75); pop(); }
   rs('draw'); if (o.draw) o.draw(u, sw);
 
   rs('zap');

@@ -34,7 +34,7 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 |---|---|
 | happy | the kit's happy mood |
 | love | heart eyes that beat (a big thump, then a smaller one, once a second) with a slow bob and sway, hearts rising from low by its top corner; no spin |
-| dance | the kit's jumpy excited motion with a party hat; keep it jumpy |
+| dance | 2.5 jumps a second in a party hat that caps its tip (never above it), tilting left on one jump and right on the next about its bottom point |
 | think | the kit's thinking mood with three dots |
 | sad | the kit's sad mood, sagging and swaying slowly under a rain cloud as wide as the bolt |
 | rage | angry brows, the 😡 scowl, a red tint and a head shake |

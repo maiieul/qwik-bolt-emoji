@@ -51,7 +51,11 @@ if (new URLSearchParams(location.search).has('clear')) {
         return { dy: -.12 * Math.abs(Math.sin(Math.PI * bp)), rot: .035 * Math.sin(Math.PI * bp / 2), dx: 0, sq: 0 };
       } });
     }],
-    dance: [2, .5, t => emoji(t, 2, 'excited', { hat: 'party', emote: null, mouth: 'laugh' }, { scale: .93, lift: 2.6 })],
+    dance: [2.4, .2, t => {
+      const jump = wave(t, 2.4, 1.25), landing = Math.exp(-frac(cycles(t, 2.4, 2.5)) * 6);
+      emoji(t, 2.4, 'excited', { hat: 'party', emote: null, mouth: 'laugh' },
+        { scale: 1.02, lift: 1.46, body: () => ({ dy: -2.4 * Math.abs(jump), sq: .16 * landing - .06 * Math.abs(jump), rot: -.13 * jump, dx: 0 }) });
+    }],
     think: [2, .8, t => emoji(t, 2, 'thinking', { seed: 1.306, lookX: .25 }, { k: .9 })],
     sad: [2, .5, t => emoji(t, 2, 'sad', { emoteAt: [1.88, 0], emoteSize: [2.2, 1.1] }, { k: 5 / 3, scale: 1.05, lift: .92, body: t => ({ sq: .08 + .02 * wave(t, 2, .5), rot: .03 * wave(t, 2, .5) }) })],
     rage: [2, .1, t => {
