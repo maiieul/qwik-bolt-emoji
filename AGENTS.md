@@ -102,8 +102,8 @@ Reapply these when you update the kit from upstream:
 
 - `src/core.js`: `SMOOTH` turns the boil off (`jit` returns 0); `drawScaled(sx, sy, draw, pivot)` scales the shapes
   drawn inside `draw` but not their stroke widths.
-- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h }` to place and size each eye kind; a
-  `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
+- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h }` to place and size each eye kind (for
+  `shades`, `x` is where the lenses sit and the bridge and arms follow); a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
   and `mouth()`'s `k`; cream-and-ochre `music` notes and cream `dots` with ink outlines, so they read on dark
   backgrounds.
 - `render_bolt.mjs` is `render.mjs` plus `--page` and `--query`, and splits args on the first `=` only.
