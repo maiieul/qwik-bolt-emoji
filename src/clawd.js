@@ -306,6 +306,7 @@ function eye(e, s, u, o, sw) {
       paint(ellPts((o.lookX || 0) * u * .3 + Math.sin(T * 40) * .04 * u, .1 * u, u * .3, u * .4, 10), { wash: PAL.ink, ink: null });
       break;
     case 'blank': paint(ellPts(0, 0, u * .8, u * 1.05, 14), { wash: PAL.cream, ink: PAL.ink, sw: sw * .7 }); break;
+    case 'white': paint(ellPts(0, 0, u * .95, u * 1.15, 16), { wash: '#FFFFFF', ink: PAL.ink, sw: sw * .6 }); break;
     case 'spark':
       paint(ellPts(0, 0, u * 1.5, u * 1.5, 18), { fill: PAL.ochre, fillOp: 90, bleed: .3, ink: null });
       paint(starPts(0, 0, u * 1.35 * (1 + .12 * Math.sin(T * 14))), { wash: PAL.cream, fill: PAL.ochre, fillOp: 80, ink: PAL.ink, sw: sw * .55 });

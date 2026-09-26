@@ -102,7 +102,7 @@ if (new URLSearchParams(location.search).has('clear')) {
     scream: [2, .5, t => {
       const f = Math.floor(t * 25 + 1e-6), jolt = n => hash(f * 1.73 + n * 7.1) * 2 - 1;
       const hands = [-1, 1].map(side => ({ x: side * 3.45 + .15, y: -3.5, rot: side * -(Math.PI / 2 + .2), side, k: 1.6 }));
-      emoji(t, 2, 'scared', { mouth: 'O', mouthSize: [1, 1.25], mouthDy: -.25, lookX: 0, tintK: 0, emote: null, fright: 1, hands, zap: .2 },
+      emoji(t, 2, 'scared', { eyes: 'white', mouth: 'O', mouthSize: [1, 1.25], mouthDy: -.25, lookX: 0, tintK: 0, emote: null, fright: 1, hands, zap: .2 },
         { k: 13 * Math.PI / 40, scale: 1.18, body: () => ({ dx: .1 * jolt(1), dy: .05 * jolt(2), rot: .012 * jolt(3), sq: -.03 }) });
     }],
     ko: [2, .5, t => emoji(t, 2, 'ko', { emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],

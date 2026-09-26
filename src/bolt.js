@@ -13,7 +13,7 @@ const FACE = { x: -3.72, y: -8.1 };
 const FACE_SPREAD = .3, MOUTH_SIZE = [1, 1.3], EYE_X = 2.1;
 const EYE_FIT = {
   normal: { w: 2.3, h: 1.05, y: -5.9 }, look: { w: 1.75, h: 1, y: -5.6 }, wide: { w: 1.8, h: .78, y: -5.9 },
-  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 1.4, h: 1.15, y: -5.9 }, scared: { w: 1.3, h: 1.05, y: -6.1 },
+  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 1.4, h: 1.15, y: -5.9 }, white: { w: 1.3, h: 1.05, y: -6.1 },
   x: { w: 1.05, h: .85, y: -5.83, x: 1.85, ink: 1.7 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 2.2, h: 1.45, y: -6.15, x: 1.95 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
 };
 const eyeFit = kind => ({ x: EYE_X, ...EYE_FIT[kind] });
@@ -279,9 +279,11 @@ function sobFace(u, sw, sob, flow) {
 }
 
 function boltFright(u, body, k) {
-  for (let i = 0; i < 24; i++) {
-    const y = lerp(-15.5, -9.7, i / 23) * u, above = clipHalf(body, [-20 * u, y], [20 * u, y]);
-    if (above.length > 2) paint(above, { wash: QWIK.fright, washOp: 17 * k, ink: null });
+  const above = y => clipHalf(body, [-20 * u, y * u], [20 * u, y * u]), solid = above(-11);
+  if (solid.length > 2) paint(solid, { wash: QWIK.fright, washOp: 255 * k, ink: null });
+  for (let i = 0; i < 12; i++) {
+    const band = above(lerp(-11, -9.6, i / 11));
+    if (band.length > 2) paint(band, { wash: QWIK.fright, washOp: 50 * k, ink: null });
   }
 }
 function boltGloom(u, sw, body, g) {
