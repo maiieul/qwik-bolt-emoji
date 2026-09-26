@@ -252,14 +252,14 @@ function sobFace(u, sw, sob, flow) {
   const along = (path, f) => { const i = Math.min(path.length - 2, Math.floor(f * (path.length - 1))), k = f * (path.length - 1) - i; return [lerp(path[i][0], path[i + 1][0], k), lerp(path[i][1], path[i + 1][1], k)]; };
   for (const s of [-1, 1]) {
     const path = [[s * 3, -5.45], [s * 3.15, -4.3], [s * 3.4, -3.05], [s * 3.75, -1.8], [s * 4.2, -.55], [s * 4.7, .7]];
-    paint(ribbon(P(path), .55 * u, 1.1 * u), { wash: PAL.sky, ink: PAL.ink, sw: sw * .45 });
+    paint(ribbon(P(path), 1.3 * u, 2.4 * u), { wash: PAL.sky, ink: PAL.ink, sw: sw * .45 });
     for (let j = 0; j < 3; j++) {
       const p = along(path, frac(flow + j / 3));
-      paint(ellPts(p[0] * u, p[1] * u, .14 * u, .34 * u, 10, 0, s * -.2), { wash: '#FFFFFF', washOp: 230, ink: null });
+      paint(ellPts(p[0] * u, p[1] * u, .3 * u, .7 * u, 10, 0, s * -.2), { wash: '#FFFFFF', washOp: 230, ink: null });
     }
     const end = path[path.length - 1];
     for (let j = 0; j < 2; j++) {
-      const f = frac(flow + j / 2), q = arcPt(end, [end[0] + s * 1.7, end[1] + 1.7], 1, f), r = .24 * (1 - .45 * f);
+      const f = frac(flow + j / 2), q = arcPt(end, [end[0] + s * 2, end[1] + 1.7], 1, f), r = .42 * (1 - .45 * f);
       paint(ellPts(q[0] * u, q[1] * u, r * u, r * 1.3 * u, 10), { wash: PAL.sky, ink: PAL.ink, sw: sw * .35 });
     }
     const half = .95 * EYE_FIT.cry.w;
