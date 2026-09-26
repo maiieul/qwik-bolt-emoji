@@ -56,7 +56,7 @@ if (new URLSearchParams(location.search).has('clear')) {
       emoji(t, 2.4, 'excited', { hat: 'party', emote: null, mouth: 'laugh' },
         { scale: 1.02, lift: 1.46, body: () => ({ dy: -2.4 * Math.abs(jump), sq: .16 * landing - .06 * Math.abs(jump), rot: -.13 * jump, dx: 0 }) });
     }],
-    think: [2, .8, t => emoji(t, 2, 'thinking', { seed: 1.306, lookX: .25 }, { k: .9 })],
+    think: [2, .8, t => emoji(t, 2, 'thinking', { seed: 1.306, lookX: .25, emoteAt: [-.4, 1.5], emoteSize: [1.4, 1.4] }, { k: .9 })],
     sad: [2, .5, t => emoji(t, 2, 'sad', { emoteAt: [1.88, 0], emoteSize: [2.2, 1.1] }, { k: 5 / 3, scale: 1.05, lift: .92, body: t => ({ sq: .08 + .02 * wave(t, 2, .5), rot: .03 * wave(t, 2, .5) }) })],
     rage: [2, .1, t => {
       const strength = .7 + .3 * wave(t, 2, .5) ** 2, shake = wave(t, 2, 3);
@@ -67,7 +67,7 @@ if (new URLSearchParams(location.search).has('clear')) {
       k: .4 * Math.PI,
       body: t => { const bp = bpOf(t); return { dy: -.18 * Math.abs(Math.sin(Math.PI * bp)), rot: .03 * Math.sin(Math.PI * bp / 2), dx: 0, sq: .025 * pulse(t, 7) }; },
     })],
-    sleepy: [2.4, .6, t => emoji(t, 2.4, 'sleepy', { hover: .5 }, { k: 1 / .96, scale: 1.18, body: t => ({ sq: .05 + .05 * wave(t, 2.4, 1 / 2.4), rot: .05 * wave(t, 2.4, 1 / 2.4, .16) }) })],
+    sleepy: [2.4, .6, t => emoji(t, 2.4, 'sleepy', { hover: .5, emoteAt: [-2, 1.5], emoteSize: [1.4, 1.4] }, { k: 1 / .96, lift: -.8, body: t => ({ sq: .05 + .05 * wave(t, 2.4, 1 / 2.4), rot: .05 * wave(t, 2.4, 1 / 2.4, .16) }) })],
     cry: [2, .1, t => {
       const f = frac(cycles(t, 2, 1.5)), sob = f < .12 ? ease(f / .12) : 1 - ease((f - .12) / .88);
       emoji(t, 2, 'cry', { sob, mouth: 'sob', mouthK: .2 + .8 * sob, mouthSize: [1.45, 1.2], mouthDy: -1 }, { lift: -.8, body: () => ({ dy: 0, dx: 0, sq: .045 * sob, rot: .012 * wave(t, 2, 6) }) });
