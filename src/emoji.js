@@ -47,21 +47,21 @@ if (new URLSearchParams(location.search).has('clear')) {
     happy: [2, .5, t => emoji(t, 2, 'happy', {}, { scale: 1.17, lift: 0 })],
     love: [2, .08, t => {
       const p = frac(t), thump = (at, w) => Math.exp(-(((p - at) / w) ** 2)), beat = thump(.08, .05) + .6 * thump(.28, .05);
-      emoji(t, 2, 'love', { heartScale: 1 + .32 * beat, emoteAt: [0, 1.5] }, { k: 1 / 1.1, lift: -.59, body: t => {
+      emoji(t, 2, 'love', { heartScale: 1 + .32 * beat, emoteAt: [0, 1.5], mouthSize: [1.4, 1.4], mouthDy: .35 }, { k: 1 / 1.1, lift: -.59, body: t => {
         const bp = bpOf(t);
         return { dy: -.12 * Math.abs(Math.sin(Math.PI * bp)), rot: .035 * Math.sin(Math.PI * bp / 2), dx: 0, sq: 0 };
       } });
     }],
     dance: [2.4, .2, t => {
       const jump = wave(t, 2.4, 1.25), landing = Math.exp(-frac(cycles(t, 2.4, 2.5)) * 6);
-      emoji(t, 2.4, 'excited', { hat: 'party', emote: null, mouth: 'laugh' },
+      emoji(t, 2.4, 'excited', { hat: 'party', emote: null, mouth: 'laugh', mouthSize: [1.15, 1.2] },
         { scale: 1.02, lift: 1.46, body: () => ({ dy: -2.4 * Math.abs(jump), sq: .16 * landing - .06 * Math.abs(jump), rot: -.13 * jump, dx: 0 }) });
     }],
     think: [2, .8, t => emoji(t, 2, 'thinking', { seed: 1.306, lookX: .25, emoteAt: [-.4, 1.5], emoteSize: [1.4, 1.4] }, { k: .9 })],
-    sad: [2, .5, t => emoji(t, 2, 'sad', { emoteAt: [1.88, 0], emoteSize: [2.2, 1.1] }, { k: 5 / 3, scale: 1.05, lift: .92, body: t => ({ sq: .08 + .02 * wave(t, 2, .5), rot: .03 * wave(t, 2, .5) }) })],
+    sad: [2, .5, t => emoji(t, 2, 'sad', { emoteAt: [1.88, 0], emoteSize: [2.2, 1.1], mouthSize: [1.55, 1.55], mouthDy: -.25 }, { k: 5 / 3, scale: 1.05, lift: .92, body: t => ({ sq: .08 + .02 * wave(t, 2, .5), rot: .03 * wave(t, 2, .5) }) })],
     rage: [2, .1, t => {
       const strength = .7 + .3 * wave(t, 2, .5) ** 2, shake = wave(t, 2, 3);
-      emoji(t, 2, 'angry', { eyes: 'angry', mouth: 'scowl', brows: 1, tintK: 2, emote: 'anger', emoteK: 1 },
+      emoji(t, 2, 'angry', { eyes: 'angry', mouth: 'scowl', mouthSize: [1.15, 1.2], mouthDy: -.15, brows: 1, tintK: 2, emote: 'anger', emoteK: 1 },
         { scale: 1.18, body: () => ({ rot: .085 * strength * shake, dx: .3 * strength * wave(t, 2, 3, .1), dy: 0, sq: .02 * strength, lookX: 0 }) });
     }],
     cool: [2, .5, t => emoji(t, 2, 'cool', {}, {
@@ -102,10 +102,10 @@ if (new URLSearchParams(location.search).has('clear')) {
     scream: [2, .5, t => {
       const f = Math.floor(t * 25 + 1e-6), jolt = n => hash(f * 1.73 + n * 7.1) * 2 - 1;
       const hands = [-1, 1].map(side => ({ x: side * 3.45 + .15, y: -3.5, rot: side * -(Math.PI / 2 + .2), side, k: 1.6 }));
-      emoji(t, 2, 'scared', { eyes: 'white', mouth: 'O', mouthSize: [1, 1.25], mouthDy: -.25, lookX: 0, tintK: 0, emote: null, fright: 1, hands, zap: .2 },
+      emoji(t, 2, 'scared', { eyes: 'white', mouth: 'O', mouthSize: [1.2, 1.35], mouthDy: -.25, lookX: 0, tintK: 0, emote: null, fright: 1, hands, zap: .2 },
         { k: 13 * Math.PI / 40, scale: 1.18, body: () => ({ dx: .1 * jolt(1), dy: .05 * jolt(2), rot: .012 * jolt(3), sq: -.03 }) });
     }],
-    ko: [2, .5, t => emoji(t, 2, 'ko', { emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
+    ko: [2, .5, t => emoji(t, 2, 'ko', { mouthSize: [1.1, 1.3], mouthDy: .4, emoteSize: [1.15, 1.15], emotePartSize: 1.9 }, { k: .4 * Math.PI, lift: -1.1, body: t => ({ sq: .28 + .02 * wave(t, 2, .5), rot: .12 }) })],
   };
   for (const [name, [len, , draw]] of Object.entries(E)) { LOOPS['emoji_' + name] = draw; LOOPS['emoji_' + name].len = len; }
   window.EMOJI_NAMES = Object.keys(E);

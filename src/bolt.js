@@ -10,11 +10,11 @@ const BOLT = [[1.112, -7.952], [-7.475, -16.301], [-6.554, -9.952], [-8.555, -7.
 const BOLT_R = [.5, .6, .3, .5, .6, .3];
 const BODY_CX = -3.72, BODY_CY = -8.15;
 const FACE = { x: -3.72, y: -8.1 };
-const FACE_SPREAD = .3, MOUTH_SIZE = [1, 1.3], EYE_X = 2.1;
+const FACE_SPREAD = .3, MOUTH_SIZE = [1.8, 1.7], MOUTH_INK = 2, EYE_X = 2.1;
 const EYE_FIT = {
-  normal: { w: 2.3, h: 1.05, y: -5.9 }, look: { w: 1.75, h: 1, y: -5.6 }, wide: { w: 1.8, h: .78, y: -5.9 },
-  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 2.2, h: 2, y: -6.3, x: 2.35 }, white: { w: 1.3, h: 1.05, y: -6.1 },
-  x: { w: 1.05, h: .85, y: -5.83, x: 1.85, ink: 1.7 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 1.8, h: 1.45, y: -6.15, x: 2.28 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
+  normal: { w: 3, h: 1.35, y: -5.9, oval: true }, look: { w: 2.6, h: 1.4, y: -5.3, oval: true }, wide: { w: 2.4, h: 1.04, y: -5.9, oval: true },
+  happy: { w: 1.6, h: 1.3, y: -6.7, ink: 1.5 }, sad: { w: 2.35, h: 1.5, y: -6.5, x: 1.9 }, angry: { w: 1.95, h: 1.15, y: -6.1 }, heart: { w: 2.2, h: 2, y: -6.3, x: 2.35 }, white: { w: 1.45, h: 1.2, y: -6.1 },
+  x: { w: 1.05, h: 1.3, y: -5.95, x: 1.6, ink: 1.5 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 1.75, h: 1.45, y: -6.15, x: 2.28, ink: 1.3 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
 };
 const eyeFit = kind => ({ x: EYE_X, ...EYE_FIT[kind] });
 
@@ -149,7 +149,7 @@ function bolt(x, y, u, o = {}) {
     if (o.brows) brows(u, sw, o.brows);
     rs('mouth');
     drawShifted((o.mouthDy || 0) * u + spread, () =>
-      drawScaled(mouthW, mouthH, () => mouth(u, o.mouth ?? (o.lid > .1 ? 'wail' : null), sw, o.mouthK ?? 1), [0, -4.9 * u]));
+      drawScaled(mouthW, mouthH, () => mouth(u, o.mouth ?? (o.lid > .1 ? 'wail' : null), sw * MOUTH_INK, o.mouthK ?? 1), [0, -4.9 * u]));
     if (o.mustache) drawShifted(spread + .2 * u, () => drawScaled(.8, 1, () => mustache(u, sw)));
     if (o.shades) shades(u, sw, o.shades);
     for (const h of o.hands || []) hand(u, sw, h, tones.white.col);
@@ -241,7 +241,7 @@ function mustache(u, sw) {
 
 function brows(u, sw, k = 1) {
   if (k === 'up') {
-    for (const s of [-1, 1]) inkLine([[s * 2.35 * u, -7.45 * u], [s * 1.7 * u, -7.95 * u], [s * u, -7.6 * u]], sw * 1.3, PAL.ink, 'ink', .6);
+    for (const s of [-1, 1]) inkLine([[s * 2 * u, -7.75 * u], [s * 1.45 * u, -8.2 * u], [s * .8 * u, -7.9 * u]], sw * 1.3, PAL.ink, 'ink', .6);
     return;
   }
   for (const s of [-1, 1]) inkLine([[s * 2.35 * u, -7.35 * u], [s * 1.65 * u, (-7.05 + .1 * k) * u], [s * .85 * u, (-6.7 + .25 * k) * u]], sw * 1.5, PAL.ink, 'ink', .4);
@@ -274,7 +274,7 @@ function sobFace(u, sw, sob, flow) {
       paint(ellPts(q[0] * u, q[1] * u, r * u, r * 1.3 * u, 10), { wash: PAL.sky, ink: PAL.ink, sw: sw * .35 });
     }
     const half = .95 * EYE_FIT.cry.w;
-    inkLine(P([[s * EYE_X - half, -5.75], [s * EYE_X, -6.3 + .12 * sob], [s * EYE_X + half, -5.75]]), sw * 1.35, PAL.ink, 'ink', .5);
+    inkLine(P([[s * EYE_X - half, -5.75], [s * EYE_X, -6.3 + .12 * sob], [s * EYE_X + half, -5.75]]), sw * 1.6, PAL.ink, 'ink', .5);
   }
 }
 

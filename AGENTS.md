@@ -27,8 +27,10 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 - Each emoji fills the frame's height: its `scale` and `lift` put the loop's highest and lowest points 2–3 px from the
   edges. `scale` stops at 1.2 so the bolts stay close in size; emoji whose extras or motion need room (dance, sad) come out
   smaller.
-- The eyes are as wide as the bolt allows: `EYE_FIT` in `src/bolt.js` sizes and places each eye kind, 2.1u either
-  side of the middle (`EYE_X`). Eyes, brows and mouths stay inside the outline; glasses and heart eyes may hang past it.
+- The face is as big as the bolt allows: `EYE_FIT` in `src/bolt.js` sizes and places each eye kind, 2.1u either
+  side of the middle (`EYE_X`). The plain eyes (normal, look, wide) are ovals, which fill the bolt's diamond-shaped
+  middle better than slits. Mouths are 1.8× as wide and 1.7× as tall as the kit's (`MOUTH_SIZE`), with lines twice as
+  thick (`MOUTH_INK`). Eyes, brows and mouths stay inside the outline; glasses and heart eyes may hang past it.
 
 | emoji | what it does |
 |---|---|
@@ -88,7 +90,7 @@ face, colour and extras options (not views, legs or lid), plus:
 | `tintFrom`, `tintTo`, `tintMix` | colour cross-fade between moods, as in `boltEmotions` |
 | `turnX` | -1..1, a turn about the middle; the back has no face |
 | `brows` | 0..1 for anger, or `'up'` |
-| `mouthK`, `mouthDy`, `mouthSize` | how open the mouth is; how far down it sits, in u; `[w, h]` scale (default `[1, 1.3]`) |
+| `mouthK`, `mouthDy`, `mouthSize` | how open the mouth is; how far down it sits, in u; `[w, h]` scale (default `[1.8, 1.7]`) |
 | `sob` | 0..1, the 😭 face with tear streams |
 | `shades` | `{ dy, rot }`: sunglasses |
 | `hands`, `thumbs` | floating mittens or thumbs-up fists, `[{ x, y, rot, side, k }]` in face units; thumbs also take `arm` |
@@ -106,8 +108,9 @@ Reapply these when you update the kit from upstream:
 
 - `src/core.js`: `SMOOTH` turns the boil off (`jit` returns 0); `drawScaled(sx, sy, draw, pivot)` scales the shapes
   drawn inside `draw` but not their stroke widths.
-- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h, ink }` to place, size and thicken each eye kind (for
-  `shades`, `x` is where the lenses sit and the bridge and arms follow); a pure `white` eye kind; a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
+- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h, ink, oval }` to place, size and thicken each eye kind (for
+  `shades`, `x` is where the lenses sit and the bridge and arms follow); `oval` draws the slit eyes as ovals, which blink as a
+  line through their middle and shut to an arch as wide as the eye; a pure `white` eye kind; a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
   and `mouth()`'s `k`; cream-and-ochre `music` notes and cream `dots` with ink outlines, so they read on dark
   backgrounds.
 - `render_bolt.mjs` is `render.mjs` plus `--page` and `--query`, and splits args on the first `=` only.

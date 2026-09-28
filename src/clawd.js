@@ -238,25 +238,26 @@ function eyes(u, o, sw, sides, smear = 0) {
     return;
   }
   for (const s of sides) {
-    const kind = kinds[s < 0 ? 0 : 1], k = squints[s < 0 ? 0 : 1], { x, y, w, h, ink } = fit(kind);
+    const kind = kinds[s < 0 ? 0 : 1], k = squints[s < 0 ? 0 : 1], { x, y, w, h, ink, oval } = fit(kind);
     push(); translate(s * x * u, y * u);
     drawScaled(w, h, () => {
-      if (k > .8) inkLine([[-.6 * u, .3 * u], [0, -.15 * u], [.6 * u, .3 * u]], sw * 1.2, PAL.ink, 'ink', .5);
-      else { if (k > 0) scale(1 + k * .15, 1 - k); eye(kind, s, u, o, sw * ink); }
+      if (k > .8) { const a = oval ? .5 : .6; inkLine([[-a * u, .3 * u], [0, -.15 * u], [a * u, .3 * u]], sw * 1.2, PAL.ink, 'ink', .5); }
+      else { if (k > 0) scale(1 + k * .15, 1 - k); eye(kind, s, u, o, sw * ink, oval); }
     });
     pop();
   }
 }
 
 // One eye, drawn around its centre. s = -1 for the left eye, 1 for the right.
-function eye(e, s, u, o, sw) {
+function eye(e, s, u, o, sw, oval = false) {
   const lx = (o.lookX || 0) * u * .5, ly = (o.lookY || 0) * u * .4;
   const slit = (w, h) => {
-    paint(rectPts(-w / 2 * u + lx, -h / 2 * u + ly, w * u, h * u, u * .04), { wash: PAL.ink, ink: null });
+    if (blinkOn) return inkLine([[lx - w * .4 * u, ly], [lx + w * .4 * u, ly]], sw, PAL.ink, 'ink', 0);
+    paint(oval ? ellPts(lx, ly, w / 2 * u, h / 2 * u, 28) : rectPts(-w / 2 * u + lx, -h / 2 * u + ly, w * u, h * u, u * .04), { wash: PAL.ink, ink: null });
     if (u > 9) paint(ellPts(lx - w * .18 * u, ly - h * .29 * u, u * .17 * w, u * .24 * w, 10), { wash: PAL.cream, washOp: 230, ink: null });
   };
   const blinkOn = ['normal', 'look', 'wide'].includes(e) && ((T * .9 + (o.seed || 0) * 1.7) % 3.3) < .12;
-  if (blinkOn) { inkLine([[-.7 * u, .5 * u], [.7 * u, .5 * u]], sw, PAL.ink, 'ink', 0); return; }
+  if (blinkOn && !oval) { inkLine([[-.7 * u, .5 * u], [.7 * u, .5 * u]], sw, PAL.ink, 'ink', 0); return; }
   const lineEye = (pts, w = 1.3, c = .2) => inkLine(pts.map(([a, b]) => [a * u, b * u]), sw * w, PAL.ink, 'ink', c);
   switch (e) {
     case 'normal': case 'look': slit(1, 2); break;
@@ -371,7 +372,7 @@ function mouth(u, m, sw, k = 1) {
       paint(ellPts(0, -3.72 * u, .72 * u, .2 * u, 12), { wash: PAL.rose, ink: null });
       break;
     case 'scowl':
-      line([[-1.2, -3.95], [-.6, -4.45], [0, -4.62], [.6, -4.45], [1.2, -3.95]], 1.25, .6); break;
+      line([[-1.2, -3.95], [-.6, -4.45], [0, -4.62], [.6, -4.45], [1.2, -3.95]], .85, .6); break;
     case 'sob': {
       const h = lerp(.75, 1.45, clamp(k)), top = -4.75;
       paint(P([[-1.55, top + .35], [-.7, top], [.7, top], [1.55, top + .35], [1.25, top + h], [.5, top + h + .12], [-.5, top + h + .12], [-1.25, top + h]]), { wash: dark, ink: PAL.ink, sw: sw * .6, curv: .35 });
