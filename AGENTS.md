@@ -13,8 +13,8 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 - The watercolour output has no copy in `dist/`; judge it by eye in `out/emoji/preview.png`.
 - `export_svg.mjs` prints each emoji's gaps to the frame edges, in px at 128. Keep the top and bottom gaps at 2–3 px
   and the sides at 0 or more; the laser beams leave the frame on purpose.
-- `node check_face.mjs [name ...]` prints how far the eyes, brows, mouth and mustache stay inside the bolt's outline, in
-  px at 128, at the worst frame. Keep them at 0 or more (-0.3 at worst); it leaves out the glasses, heart eyes, tears and blush.
+- `node check_face.mjs [name ...]` prints how far the mouth stays inside the bolt's outline, in px at 128, at the worst
+  frame. Keep it at 0 or more (-0.3 at worst).
 
 ## Design
 
@@ -27,10 +27,12 @@ Read [README.md](README.md) first. The bolt reuses Clawd's face parts, emotions 
 - Each emoji fills the frame's height: its `scale` and `lift` put the loop's highest and lowest points 2–3 px from the
   edges. `scale` stops at 1.2 so the bolts stay close in size; emoji whose extras or motion need room (dance, sad) come out
   smaller.
-- The face is as big as the bolt allows: `EYE_FIT` in `src/bolt.js` sizes and places each eye kind, 2.1u either
-  side of the middle (`EYE_X`). The plain eyes (normal, look, wide) are ovals, which fill the bolt's diamond-shaped
-  middle better than slits. Mouths are 1.8× as wide and 1.7× as tall as the kit's (`MOUTH_SIZE`), with lines twice as
-  thick (`MOUTH_INK`). Eyes, brows and mouths stay inside the outline; glasses and heart eyes may hang past it.
+- The eyes are about twice the kit's size, so they span the bolt's width and hang past its outline. `EYE_FIT` in
+  `src/bolt.js` sizes and places each eye kind; most are `round`, since big square eyes merge into one dark band. Eyes,
+  brows and the mustache sit on a rim of the body's colour (`drawRimmed`), which keeps them clear of the outline and of
+  Discord's dark background.
+- Mouths are about twice the kit's size (`MOUTH_SIZE`), with lines twice as thick (`MOUTH_INK`). They sit low and
+  `MOUTH_X` to the right, where the bolt's lower half has room, and stay inside the outline.
 
 | emoji | what it does |
 |---|---|
@@ -90,7 +92,7 @@ face, colour and extras options (not views, legs or lid), plus:
 | `tintFrom`, `tintTo`, `tintMix` | colour cross-fade between moods, as in `boltEmotions` |
 | `turnX` | -1..1, a turn about the middle; the back has no face |
 | `brows` | 0..1 for anger, or `'up'` |
-| `mouthK`, `mouthDy`, `mouthSize` | how open the mouth is; how far down it sits, in u; `[w, h]` scale (default `[1.8, 1.7]`) |
+| `mouthK`, `mouthDy`, `mouthSize` | how open the mouth is; how far down it sits, in u; `[w, h]` scale (default `[2.1, 2.4]`) |
 | `sob` | 0..1, the 😭 face with tear streams |
 | `shades` | `{ dy, rot }`: sunglasses |
 | `hands`, `thumbs` | floating mittens or thumbs-up fists, `[{ x, y, rot, side, k }]` in face units; thumbs also take `arm` |
@@ -108,9 +110,10 @@ Reapply these when you update the kit from upstream:
 
 - `src/core.js`: `SMOOTH` turns the boil off (`jit` returns 0); `drawScaled(sx, sy, draw, pivot)` scales the shapes
   drawn inside `draw` but not their stroke widths.
-- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h, ink, oval }` to place, size and thicken each eye kind (for
-  `shades`, `x` is where the lenses sit and the bridge and arms follow); `oval` draws the slit eyes as ovals, which blink as a
-  line through their middle and shut to an arch as wide as the eye; a pure `white` eye kind; a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
+- `src/clawd.js`: `eyes()` takes `o.eyeFit(kind)`, returning `{ x, y, w, h, ink, round }` to place, size and thicken each eye kind (for
+  `shades`, `x` is where the lenses sit and the bridge and arms follow); `round` draws the slit eyes as ovals that blink as a
+  line through their middle and shut to a narrower arch `ink` times as thick, the sad and angry eyes as ovals under their
+  slanted top, the sleepy pupils as half ovals under a shorter lid, and the happy eyes as round arches; a pure `white` eye kind; a `[left, right]` squint, drawn shut as an arch; `heartScale`; the `beam`, `scowl` and `sob` mouths
   and `mouth()`'s `k`; cream-and-ochre `music` notes and cream `dots` with ink outlines, so they read on dark
   backgrounds.
 - `render_bolt.mjs` is `render.mjs` plus `--page` and `--query`, and splits args on the first `=` only.

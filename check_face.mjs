@@ -10,7 +10,7 @@ await page.waitForFunction('window.ready === true');
 const names = process.argv.slice(2).length ? process.argv.slice(2) : await page.evaluate(() => window.EMOJI_NAMES);
 
 const report = await page.evaluate(names => {
-  const PARTS = ['eyes', 'sobFace', 'mouth', 'brows', 'mustache'], BRUSH = { ink: 5.4, inkfine: 2.8, dry: 6 }, OUTLINE = 5.9;
+  const PARTS = ['mouth'], BRUSH = { ink: 5.4, inkfine: 2.8, dry: 6 }, OUTLINE = 5.9;
   function recordParts(loop, t) {
     const shapes = [], saved = { paint, inkLine, flushBrush, glow }, drawers = {}, stack = [];
     let m = [1, 0, 0, 1, 0, 0], part = null;
@@ -24,7 +24,7 @@ const report = await page.evaluate(names => {
     for (const [k, fn] of Object.entries(transforms)) Object.defineProperty(window, k, { value: fn, writable: true, configurable: true });
     for (const f of PARTS) {
       drawers[f] = window[f];
-      window[f] = (...args) => { const outer = part; part = f === 'eyes' && ['shades', 'heart'].includes(args[1].eyes) ? 'overhang' : f; try { return drawers[f](...args); } finally { part = outer; } };
+      window[f] = (...args) => { const outer = part; part = f; try { return drawers[f](...args); } finally { part = outer; } };
     }
     const toCanvas = ([x, y]) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
     paint = (pts, o = {}) => {
@@ -32,7 +32,7 @@ const report = await page.evaluate(names => {
       const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), size = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
       const ink = o.ink === null ? 0 : Math.min((o.sw ?? 1) * OUTLINE * (o.br === 'inkfine' ? .53 : 1), size * .09) * Math.hypot(m[0], m[1]);
       const isOutline = !part && pts.length === 36 && !o.wash && o.ink === PAL.ink;
-      shapes.push({ part: isOutline ? 'outline' : part === 'sobFace' ? 'tears' : part, pts: pts.map(toCanvas), pad: ink / 2 });
+      shapes.push({ part: isOutline ? 'outline' : part, pts: pts.map(toCanvas), pad: ink / 2 });
     };
     inkLine = (pts, sw = 1, col, br = 'ink') => shapes.push({ part, pts: pts.map(toCanvas), pad: sw * (BRUSH[br] || BRUSH.ink) / 2 * Math.hypot(m[0], m[1]) });
     flushBrush = () => {}; glow = () => {};
