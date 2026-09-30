@@ -1,0 +1,15 @@
+{
+  "name": "qwik-mascot-video",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "A short painted explainer of Qwik's JavaScript streaming, starring the Qwik bolt",
+  "type": "module",
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "p5": "^2.3.3",
+    "p5.brush": "^2.2.3",
+    "puppeteer-core": "^25.11.0",
+    "sharp": "^0.35.4"
+  }
+}
