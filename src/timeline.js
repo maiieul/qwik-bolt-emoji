@@ -19,6 +19,7 @@ function drawWorld(t) {
     const t0 = SHOTS[i][0], end = i + 1 < SHOTS.length ? SHOTS[i + 1][0] : DUR;
     SHOTS[i][1](t, t - t0, end - t0);
     CAM = null;
+    if (window.drawOverlay) drawOverlay(t);
   }
   flushLetters();
 }
