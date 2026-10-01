@@ -114,7 +114,7 @@ if (args.sheet || args.strip) {
   let next = 0; const start = Date.now();
   await Promise.all(Array.from({ length: workers }, async (_, w) => {
     const page = await openPage('#' + w);
-    while (next < n) { const i = next++; writeFileSync(`${out}/f${String(i).padStart(4, '0')}.png`, await frameOf(page, a + i / fps, 'image/png')); }
+    while (next < n) { const i = next++; writeFileSync(`${out}/f${String(i).padStart(4, '0')}.png`, await frameOf(page, (Math.round(a * fps) + i) / fps, 'image/png')); }
   }));
   console.log(`${n} frames → ${out}  (${((Date.now() - start) / n).toFixed(0)} ms/frame)`);
 } else if (args.frames) {
@@ -130,7 +130,7 @@ if (args.sheet || args.strip) {
     const page = await openPage('#' + w);
     while (next < todo.length) {
       const i = todo[next++], f = `${FRAMES_DIR}/f${String(i).padStart(5, '0')}.jpg`;
-      const buf = await frameOf(page, start + i / fps, 'image/jpeg', .94);
+      const buf = await frameOf(page, (Math.round(start * fps) + i) / fps, 'image/jpeg', .94);
       writeFileSync(f + '.tmp', buf); renameSync(f + '.tmp', f);
       if (++done % 24 === 0 || done === todo.length) {
         const el = (Date.now() - began) / 1000;
@@ -149,7 +149,7 @@ if (args.sheet || args.strip) {
     { stdio: ['pipe', 'inherit', 'inherit'] });
   const n = Math.round((b - a) * fps), began = Date.now();
   for (let i = 0; i < n; i++) {
-    const buf = await frameOf(page, a + i / fps, 'image/jpeg', .93);
+    const buf = await frameOf(page, (Math.round(a * fps) + i) / fps, 'image/jpeg', .93);
     if (!ff.stdin.write(buf)) await new Promise(r => ff.stdin.once('drain', r));
     if (i % 24 === 0 || i === n - 1) console.log(`frame ${i + 1}/${n}  ${((Date.now() - began) / (i + 1)).toFixed(0)} ms/frame`);
   }
