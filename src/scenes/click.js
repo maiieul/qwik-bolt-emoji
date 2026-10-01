@@ -14,9 +14,9 @@
   const mixObj = (a, b, k) => Object.fromEntries(Object.keys(a).map(f => [f, lerp(a[f], b[f], k)]));
 
   const AT = {
-    press1: 36.0, catch1: 36.3, flick: 36.78, heart: 37.0, holster: 37.74,
+    press1: 36.0, catch1: 36.3, cock: 36.81, flick: 36.87, heart: 37.0, holster: 37.74,
     move2: 38.05, peek: 38.8, press2: 40.0, catch2: 40.3, cubby: 40.48, take: 41.3,
-    fist: 42.0, lookUp: 42.62, determined: 43.0, shoot: 43.47,
+    fist: 42.0, lookUp: 42.64, idea: 42.86, determined: 43.0, shoot: 43.47,
   };
   const PATS = [40.8, 40.96];
   const fromBolt = (dx, dy, z) => [BX + dx, BY + dy, z];
@@ -24,11 +24,11 @@
 
   function camAt(t) {
     const c = camKeys(t, [
-      [35.0, 'deskMaster'], [36.05, fromBolt(285, -300, 1.2)], [38.55, fromBolt(292, -297, 1.215)], [39.8, fromBolt(356, -270, 1.32)], [40.44, fromBolt(360, -268, 1.325)],
-      [41.0, fromBolt(-104, -274, 1.85)], [42.0, fromBolt(-96, -276, 1.865)], [42.45, fromBolt(8, -268, 2.0)], [42.64, fromBolt(6, -272, 2.0)],
-      [43.0, fromBolt(220, -448, 1.4)], [43.06, fromBolt(220, -448, 1.4)], [43.45, fromBolt(320, -468, 1.22)],
+      [35.0, 'deskMaster'], [36.05, fromBolt(285, -300, 1.2)], [38.55, fromBolt(292, -311, 1.215)], [39.8, fromBolt(356, -346, 1.32)], [40.44, fromBolt(360, -347, 1.325)],
+      [41.0, fromBolt(-158, -300, 1.85)], [42.0, fromBolt(-152, -302, 1.86)], [42.78, fromBolt(-148, -304, 1.87)],
+      [43.05, fromBolt(230, -425, 1.38)], [43.45, fromBolt(290, -462, 1.27)],
     ]);
-    if (t > 43.45) { const k = easeIn(seg(t, 43.45, 44.0)); c[1] -= 10 * k; c[2] -= .015 * k; }
+    if (t > 43.45) { const k = easeIn(seg(t, 43.45, 44.0)); c[0] -= 30 * k; c[1] -= 25 * k; c[2] += .03 * k; }
     c[2] *= 1 + .035 * spring(t, AT.take, 7, 20);
     const [sx, sy] = shakeXY(t, decay(t, AT.take, 7, 9) + decay(t, AT.shoot, 8, 10));
     return [c[0] + sx / c[2], c[1] + sy / c[2], c[2]];
@@ -43,7 +43,7 @@
 
   const HAND = {
     start: WORLD.handIn, c1: [LIKE[0] + 470, LIKE[1] - 470], c2: [LIKE[0] + 130, LIKE[1] - 270], hover1: [LIKE[0] + 30, LIKE[1] - 50], press1: [LIKE[0] + 2, LIKE[1] - 4],
-    rest1: [LIKE[0] + 170, LIKE[1] - 260], hover2: [CART[0] + 24, CART[1] - 54], press2: [CART[0] + 22, CART[1] - 8], rest2: [CART[0] + 40, CART[1] - 90],
+    rest1: [LIKE[0] + 260, LIKE[1] - 140], hover2: [CART[0] + 24, CART[1] - 54], press2: [CART[0] + 22, CART[1] - 8], rest2: [CART[0] + 40, CART[1] - 90],
   };
   function handAt(t) {
     if (t < 35.95) {
@@ -130,26 +130,42 @@
     }
     return xs.length ? [Math.min(...xs), Math.max(...xs)] : [0, 0];
   }
-  function drawBrows(u, sw, B, eyeDy, shift, spread) {
+  function drawBrows(u, sw, B, eyeDy, shift, xk) {
     for (const sd of [-1, 1]) {
-      const [lift, tilt] = sd < 0 ? B.L : B.R, y = -7.45 + eyeDy - lift * B.k, d = .4 * tilt * B.k, o = sd * spread * .5;
-      const P = [[sd * 1.05 + o, y + d], [sd * 1.85 + o, y - .2 * B.k], [sd * 2.6 + o, y - d]].map(([x, py]) => {
+      const [lift, tilt] = sd < 0 ? B.L : B.R, y = -7.45 + eyeDy - lift * B.k, d = .4 * tilt * B.k, o = sd > 0 ? -(B.inR || 0) : 0;
+      const P = [[sd * 1.05 * xk + o, y + d], [sd * 1.85 * xk + o, y - .2 * B.k], [sd * 2.6 * xk + o, y - d]].map(([x, py]) => {
         const [l, r] = bodySpan(py + FACE.y + 6), fx = x + shift + FACE.x;
         return [(clamp(fx, l + .45, r - .45) - FACE.x) * u, py * u];
       });
       inkLine(P, sw * 1.35, PAL.ink, 'ink', .6);
     }
   }
+  function pupilEyes(u, sw, F, xk, sk) {
+    const sq = clamp(F.squint || 0), rx = .95 * u * sk, ry = 1.15 * u * sk, cut = -ry + 2 * ry * (F.lid || 0);
+    const below = P => (F.lid ? clipHalf(P, [2 * rx, cut], [-2 * rx, cut]) : P);
+    for (const s of [-1, 1]) {
+      push(); translate(s * EYE_X * xk * u, -6 * u);
+      if (sq > .8) inkLine([[-.8 * u, 0], [.8 * u, 0]], sw, PAL.ink, 'ink', 0);
+      else {
+        scale(1, 1 - sq);
+        paint(below(ellPts(0, 0, rx, ry, 16)), { wash: PAL.cream, ink: PAL.ink, sw: sw * .6 });
+        const pupil = below(ellPts((F.lookX || 0) * rx * .44, (F.lookY || 0) * ry * .48 + .04 * ry, .34 * rx, .37 * ry, 10));
+        if (pupil.length > 2) paint(pupil, { wash: PAL.ink, ink: null });
+        if (F.lid) { const half = rx * Math.sqrt(Math.max(0, 1 - (cut / ry) ** 2)) * 1.12; inkLine([[-half, cut], [half, cut]], sw * 1.1, PAL.ink, 'ink', 0); }
+      }
+      pop();
+    }
+  }
   function faceHook(F) {
     return (u, sw) => {
-      const tn = F.turn || 0, shift = tn * 1.15 * u, ey = F.eyeDy || 0;
+      const tn = F.turn || 0, shift = tn * 1.15 * u, ey = F.eyeDy || 0, [xk, sk] = F.eyeK || [1, 1];
+      const fit = kind => { const f = eyeFit(kind); return { ...f, x: f.x * xk, w: (f.w ?? 1) * sk, h: (f.h ?? 1) * sk }; };
       push(); translate(FACE.x * u, (FACE.y + 6) * u);
       if (F.blush > .01) { push(); translate(shift, FACE_SPREAD * u); blush(u, sw, { sides: [-1, 1], bx: EYE_X - .2 }, F.blush); pop(); }
       boilSeed('bolt bolt eyes');
       if (F.shades && F.shades.rest) drawShades(u, sw, { ...F.shades, turn: tn, dx: tn * 1.15 });
-      else if (!F.eyeSpread) { push(); translate(shift, ey * u); scale(1 - .1 * Math.abs(tn), 1); drawEyes(u, { ...F, eyeFit }, sw, [-1, 1], 0); pop(); }
-      else for (const sd of [-1, 1]) { push(); translate(shift + sd * F.eyeSpread * u * (1 - .1 * Math.abs(tn)), ey * u); drawEyes(u, { ...F, eyeFit }, sw, [sd], 0); pop(); }
-      if (F.brows) { boilSeed('click brows'); drawBrows(u, sw, F.brows, ey, tn * 1.15, F.eyeSpread || 0); }
+      else { push(); translate(shift, ey * u); scale(1 - .1 * Math.abs(tn), 1); if (F.pupils) pupilEyes(u, sw, F, xk, sk); else drawEyes(u, { ...F, eyeFit: fit }, sw, [-1, 1], 0); pop(); }
+      if (F.brows) { boilSeed('click brows'); drawBrows(u, sw, F.brows, ey, tn * 1.15, xk); }
       boilSeed('bolt bolt mouth');
       push(); translate(shift * .85, 0);
       drawShifted(((F.mouthDy || 0) + FACE_SPREAD) * u, () => drawScaled(MOUTH_SIZE[0], MOUTH_SIZE[1], () => mouth(u, F.mouth, sw, F.mouthK ?? 1), [0, -4.9 * u]));
@@ -160,7 +176,8 @@
   }
 
   const SH_EYES = { dx: 0, dy: 0, rot: 0, w: 1.4, h: 1.25, L: 2.85, sx: 1, sy: 1 };
-  const SH_PEEK = { dx: 0, dy: 1.25, rot: .05, w: 1.28, h: 1.2, L: 2.6, sx: 1, sy: 1 };
+  const SH_PEEK = { dx: 0, dy: 2.0, rot: .05, w: 1.28, h: 1.2, L: 2.6, sx: 1, sy: 1 };
+  const PEEK = { eyeDy: -.45, mouthDy: 1.25, x: .86, size: .8, lid: .3 };
   const SH_HEAD = { dx: 0, dy: -3.2, rot: -.12, w: 1, h: 1, L: 2.5, sx: 1, sy: 1 };
   const FLY_UP = [AT.take - .02, AT.take + .22];
   function shadesAt(t, tn) {
@@ -183,23 +200,23 @@
 
   const MOODS = [
     [35.0, 'cool'],
-    [AT.peek, 'suspicious', { eyes: 'normal', squint: .3, mouth: 'flat' }],
+    [AT.peek, 'suspicious', { eyes: 'normal', squint: 0, mouth: 'flat' }],
     [AT.cubby, 'surprised', { eyes: 'normal', mouth: 'o', emote: null }],
     [AT.take, 'scared', {}],
     [42.05, 'nervous', {}],
     [AT.determined, 'determined', { mouth: 'flat' }],
   ];
   const TURN = [
-    [36.34, 0], [36.44, -.75], [36.64, -.75], [36.72, .3], [37.3, .3], [37.48, .5], [37.72, .5], [37.95, 0],
-    [AT.peek, 0], [38.92, .25], [AT.press2, .25], [40.2, .05], [40.46, .05], [40.58, -.15], [41.22, -.15], [AT.take, 0],
-    [42.05, 0], [42.3, .2], [AT.lookUp, .2], [AT.lookUp + .14, -.5], [AT.determined, -.35],
+    [36.34, 0], [36.44, -.75], [AT.cock, -.75], [AT.flick + .02, .3], [AT.holster, .3], [37.95, 0],
+    [AT.peek, 0], [38.92, .12], [AT.press2, .12], [40.2, .05], [40.46, .05], [40.62, -.3], [41.2, -.3], [AT.take, 0],
+    [42.05, 0], [42.3, -.3], [AT.lookUp, -.3], [AT.lookUp + .16, -.5], [AT.determined, -.35],
   ];
   function browsAt(t) {
     if (t < AT.peek) return null;
-    if (t < AT.cubby) return { k: ease(seg(t, AT.peek + .04, AT.peek + .24)), L: [-.1, .85], R: [.5, -.3] };
+    if (t < AT.cubby) return { k: ease(seg(t, AT.peek + .04, AT.peek + .24)), L: [-.1, .85], R: [.3 + .3 * bump(t, 39.42, 39.8), -.3], inR: .35 };
     if (t < AT.take) {
       const up = ease(seg(t, AT.cubby, AT.cubby + .15)), worry = ease(seg(t, 40.7, 41.2));
-      return { k: 1, L: [lerp(-.1, .35 + .25 * worry, up), lerp(.85, -.4 - .35 * worry, up)], R: [lerp(.5, .35 + .25 * worry, up), lerp(-.3, -.4 - .35 * worry, up)] };
+      return { k: 1, L: [lerp(-.1, .35 + .25 * worry, up), lerp(.85, -.4 - .35 * worry, up)], R: [lerp(.3, .35 + .25 * worry, up), lerp(-.3, -.4 - .35 * worry, up)], inR: .35 };
     }
     if (t < AT.determined) return { k: 1, L: [.85, -.8], R: [.85, -.8] };
     const set = ease(seg(t, AT.determined, AT.determined + .12));
@@ -213,39 +230,41 @@
     };
     if (t >= AT.peek && t < AT.take) {
       const low = ease(seg(t, AT.peek, AT.peek + .3));
-      F.eyeDy = -.5 * low; F.mouthDy = .55 * low; F.eyeSpread = .5 * low;
+      F.eyeDy = PEEK.eyeDy * low; F.mouthDy = PEEK.mouthDy * low; F.eyeK = [lerp(1, PEEK.x, low), lerp(1, PEEK.size, low)];
+      F.pupils = true; F.lid = PEEK.lid * (1 - .6 * ease(seg(t, 39.86, 39.96))) * (1 - ease(seg(t, AT.cubby - .02, AT.cubby + .1)));
     }
     if (t >= AT.peek && t < AT.cubby) {
       const follow = ease(seg(t, AT.press2 + .02, AT.catch2 + .05)), hov = seg(t, AT.peek, AT.peek + .3) * (1 - seg(t, 39.86, 40.0));
-      F.lookX = lerp(.5 + .12 * Math.sin((t - AT.peek) * TAU * .55) * hov, -.3, follow);
+      F.lookX = lerp(.85 + .1 * Math.sin((t - AT.peek) * TAU * .55) * hov, -.3, follow);
       F.lookY = lerp(.15 + .15 * Math.sin((t - AT.peek) * TAU * .9) * hov, -.1, follow);
     }
     if (t >= AT.cubby && t < AT.take) { F.lookX = -.55; F.lookY = .5; }
     if (t >= 42.05 && t < AT.determined) {
-      const up = ease(seg(t, AT.lookUp, AT.lookUp + .14));
-      F.lookX = lerp(.45, -1, up); F.lookY = lerp(1, -.9, up);
+      const at = ease(seg(t, 42.08, 42.26)), up = ease(seg(t, AT.lookUp, AT.lookUp + .12));
+      F.pupils = true; F.lookX = lerp(lerp(.2, -.75, at), -.85, up); F.lookY = lerp(lerp(.3, .55, at), -1, up);
     }
     if (t >= AT.determined) { F.lookX = -1; F.lookY = -.7; }
     if (t >= AT.shoot - .03) F.mouth = 'teeth';
-    if (t >= 37.52 && t < 37.72) F.mouth = 'o';
     return F;
   }
 
-  function bodyAt(t, base, mood) {
+  function bodyAt(t, base) {
     const groove = 1 - ease(seg(t, AT.peek, AT.peek + .2));
     let dy = (base.dy || 0) * groove, sq = (base.sq || 0) * groove, heelR = (base.heelR || 0) * groove;
     let lean = base.lean, dx = base.dx, rot = base.rot || 0, legSpread = base.legSpread;
-    lean += .035 * bump(t, 36.08, 36.48) - .05 * bump(t, 36.36, 36.74) + .035 * bump(t, 36.72, 37.05);
-    dy += .3 * bump(t, 36.36, 36.74);
+    const glance = ease(seg(t, 36.34, 36.46)) * (1 - ease(seg(t, AT.cock, AT.flick + .02)));
+    lean += .035 * bump(t, 36.08, 36.48) - .06 * glance + .035 * bump(t, AT.flick - .03, AT.flick + .25);
+    dy += .3 * glance;
     sq += .05 * spring(t, AT.catch1, 9, 30);
     const peek = ease(seg(t, AT.peek, AT.peek + .3)) * (1 - ease(seg(t, AT.cubby - .04, AT.cubby + .14)));
-    lean += .06 * peek; dy += .4 * bump(t, AT.peek - .05, AT.peek + .3);
+    const creep = ease(seg(t, AT.peek + .3, 39.86));
+    lean += (.06 + .06 * creep) * peek; dy += .4 * bump(t, AT.peek - .05, AT.peek + .3) + .3 * creep * peek;
     const sway = peek * seg(t, AT.peek + .2, AT.peek + .6) * (1 - seg(t, AT.press2 - .2, AT.press2));
     lean += .018 * Math.sin((t - AT.peek) * TAU * .5) * sway; dy -= .12 * Math.abs(Math.sin(bpOf(t) * Math.PI)) * sway; dx += .15 * Math.sin((t - AT.peek) * TAU * .25) * sway;
     lean += .035 * bump(t, 40.05, AT.cubby);
     sq += .05 * spring(t, AT.catch2, 9, 30);
-    const cub = ease(seg(t, AT.cubby, AT.cubby + .22)) * (1 - ease(seg(t, AT.take - .14, AT.take)));
-    lean -= .08 * cub; dy += .5 * cub;
+    const cub = ease(seg(t, AT.cubby - .02, AT.cubby + .2)), drop = 1 - ease(seg(t, AT.take - .1, AT.take + .1));
+    lean += .04 * cub; dx += .35 * cub; dy += .3 * cub * drop;
     for (const at of PATS) sq += .035 * spring(t, at, 12, 30);
     if (t >= AT.take - .14) {
       const hop = jump(t, AT.take, AT.take + .28, 1.8), up = ease(seg(t, AT.take - .02, AT.take + .14));
@@ -254,8 +273,8 @@
       dx += .12 * Math.sin(t * TAU * 11) * seg(t, AT.take + .25, AT.take + .3) * (1 - seg(t, 41.85, 42.1));
     }
     if (t >= 42.0) {
-      const down = ease(seg(t, 42.05, 42.4)), up = ease(seg(t, AT.lookUp, AT.lookUp + .2)), off = 1 - ease(seg(t, AT.determined, AT.determined + .15));
-      rot += lerp(.06 * down, -.07, up) * off;
+      const down = ease(seg(t, 42.08, 42.36)), up = ease(seg(t, AT.lookUp + .04, AT.lookUp + .22)), off = 1 - ease(seg(t, AT.determined, AT.determined + .15));
+      rot += lerp(-.05 * down, -.1, up) * off;
       sq += .05 * down * (1 - up) * off;
       dx += .25 * Math.sin(bpOf(t) * Math.PI) * off * seg(t, 42.1, 42.4);
     }
@@ -281,39 +300,38 @@
     return { handR: to, handMixR: 1, lenR: lerp(.62, lenFor(B.sh, to, .86), blend), bendR: lerp(-.55, .25, blend), wristR: -.3 * k, gripR: t < t0 + .03 ? 'fist' : 'open' };
   }
   function flickArm(t, B) {
-    const chest = add2(B.sh, [64, 40]), cock = add2(B.sh, [30, -10]), out = add2(B.sh, [300, 30]), mouthSide = add2(B.face, [146, 76]);
-    if (t < 36.64) {
+    const chest = add2(B.sh, [64, 40]), cock = add2(B.sh, [30, -10]), out = add2(B.sh, [300, 30]);
+    const aimAt = p => Math.atan2(flickTo[1] - p[1], flickTo[0] - p[0]);
+    if (t < AT.cock) {
       const k = easeOut(seg(t, AT.catch1, AT.catch1 + .22)), to = add2(mix2(FLY1.to, chest, k), [0, -10 * Math.sin(Math.PI * k)]), m = ease(seg(t, AT.catch1, AT.catch1 + .12));
       return { ...armR(B, to, lerp(.86, 1.1, m)), gripR: 'fist', holdR: heldSpark, bendR: lerp(.25, -.3, m) };
     }
-    if (t < 36.74) {
-      const k = ease(seg(t, 36.64, 36.73));
+    if (t < AT.flick - .02) {
+      const k = ease(seg(t, AT.cock, AT.flick - .02));
       return { ...armR(B, mix2(chest, cock, k), 1.12), gripR: 'fist', holdR: heldSpark, wristR: -.6 * k, bendR: -.3 };
     }
-    if (t < 37.3) {
-      const k = easeOut(seg(t, 36.74, 36.81)), kick = spring(t, AT.flick + .02, 9, 20), shot = t >= AT.flick;
+    if (t < AT.holster) {
+      const k = easeOut(seg(t, AT.flick - .02, AT.flick + .03)), kick = spring(t, AT.flick + .02, 9, 20), shot = t >= AT.flick;
       const to = add2(mix2(cock, out, k), [-8 * kick, -16 * kick]);
       return { ...armR(B, to, lerp(1.12, 1.0, k)), gripR: shot ? 'point' : 'fist', holdR: shot ? undefined : heldSpark, bendR: lerp(-.3, .2, k),
-        aimR: shot ? Math.atan2(flickTo[1] - to[1], flickTo[0] - to[0]) - .35 * kick : undefined, wristR: shot ? undefined : lerp(-.6, 0, k) };
+        aimR: shot ? aimAt(to) - .35 * kick : undefined, wristR: shot ? undefined : lerp(-.6, 0, k) };
     }
-    if (t < AT.holster) {
-      const k = ease(seg(t, 37.3, 37.5)), to = mix2(out, mouthSide, k), aimOut = Math.atan2(flickTo[1] - out[1], flickTo[0] - out[0]);
-      return { ...armR(B, to, lerp(1.0, 1.1, k)), gripR: 'point', bendR: lerp(.2, -.5, k), frontR: k > .5 ? false : undefined, aimR: lerp(aimOut, -Math.PI / 2 - .2, k) };
-    }
-    const k = ease(seg(t, AT.holster, 38.02)), twirl = TAU * ease(seg(t, AT.holster, AT.holster + .2)), to = bez2(mouthSide, add2(B.face, [170, 170]), B.hip, k);
-    return { handR: to, handMixR: 1, lenR: lerp(lenFor(B.sh, mouthSide, 1.1), .62, k), bendR: lerp(-.5, -.55, k), gripR: t < 37.92 ? 'point' : 'fist',
-      aimR: k < 1 ? -Math.PI / 2 - .2 + twirl : undefined, aimMix: 1 - ease(seg(t, 37.9, 38.02)), frontR: k < .8 ? false : undefined };
+    const k = ease(seg(t, AT.holster, 38.02)), twirl = TAU * ease(seg(t, AT.holster, AT.holster + .22)), to = bez2(out, add2(B.sh, [230, 160]), B.hip, k);
+    return { handR: to, handMixR: 1, lenR: lerp(lenFor(B.sh, out, 1.0), .62, k), bendR: lerp(.2, -.55, k), gripR: t < 37.92 ? 'point' : 'fist',
+      aimR: k < 1 ? aimAt(out) + twirl : undefined, aimMix: 1 - ease(seg(t, 37.9, 38.02)) };
   }
   function fistArm(t, B) {
-    const chest = add2(B.sh, [60, 44]), startle = add2(B.sh, [38, -4]), look = add2(B.face, [60, 96]), low = add2(B.sh, [48, 62]);
+    const chest = add2(B.sh, [60, 44]), startle = add2(B.sh, [38, -4]), look = [CART_CUBBY[0] + 50, B.face[1] + 36], low = add2(B.sh, [48, 62]);
     const back = easeOut(seg(t, AT.catch2, AT.catch2 + .22)), m = ease(seg(t, AT.catch2, AT.catch2 + .12));
     let to = add2(mix2(FLY3.to, chest, back), [0, -10 * Math.sin(Math.PI * back)]);
     if (t >= AT.take - .04) to = mix2(chest, startle, backOut(seg(t, AT.take - .04, AT.take + .14)));
-    if (t >= AT.fist) to = mix2(startle, look, ease(seg(t, AT.fist, AT.fist + .4)));
+    if (t >= AT.fist) to = bez2(startle, add2(B.face, [10, 125]), look, ease(seg(t, AT.fist + .04, AT.fist + .32)));
     if (t >= AT.determined) to = mix2(look, low, ease(seg(t, AT.determined, AT.determined + .26)));
     const shiver = t > AT.take && t < 42.1 ? 1 - seg(t, 41.8, 42.1) : 0;
     to = add2(to, [3 * Math.sin(t * TAU * 11) * shiver, 2 * Math.sin(t * TAU * 13) * shiver]);
-    return { ...armR(B, to, lerp(.86, 1.08, m)), bendR: m < 1 ? lerp(.25, -.3, m) : -.3, gripR: 'fist', holdR: heldSpark, frontR: t >= AT.take && t < AT.determined + .1 ? true : undefined };
+    const cross = ease(seg(t, AT.fist + .04, AT.fist + .32)) * (1 - ease(seg(t, AT.determined, AT.determined + .26)));
+    return { ...armR(B, to, lerp(lerp(.86, 1.08, m), 1.35, cross)), bendR: lerp(m < 1 ? lerp(.25, -.3, m) : -.3, -.8, cross), gripR: 'fist', holdR: heldSpark,
+      frontR: t >= AT.take && t < AT.determined + .1 ? true : undefined };
   }
   function rightArm(t, B) {
     if (t < 36.08) return {};
@@ -324,56 +342,72 @@
     return fistArm(t, B);
   }
 
-  const CART_CUBBY = cubbyCentre('cart'), PAT = add2(CART_CUBBY, [56, 35]), EMPTY = add2(CART_CUBBY, [72, -17]);
-  const SHOOT = { end: [PORT - 47, ARM_Y], t1: 44.0, vEnd: 1690 };
-  const OVER = [[PORT + 330, ROAD - 40], [PORT + 160, ROAD - 76], [PORT + 30, ROAD - 88], [PORT - 7, ARM_Y]];
+  const CART_CUBBY = cubbyCentre('cart'), PAT = add2(CART_CUBBY, [-10, 28]), EMPTY = add2(CART_CUBBY, [-5, -25]), EMPTY_AIM = Math.PI + .97;
+  const SHOOT = { end: [PORT - 47, ARM_Y], t1: 44.0, v0: 3.0, tau0: .13, vEnd: 1.2 };
+  const OVER = [[PORT + 330, ROAD - 40], [PORT + 160, ROAD - 75], [PORT + 40, ROAD - 95], [PORT - 7, ARM_Y + 4]];
+  const TRAIL = { from: 170, gap: 44, step: 36 };
+  const cockOf = sh => add2(sh, [70, -235]), besideHead = sh => add2(sh, [-26, -105]);
   function shootPath(sh) {
-    const K = add2(sh, [215, -225]);
-    const P = [K, [K[0] - 70, K[1] - 95], [PORT + 400, ROAD + 36], ...OVER, SHOOT.end];
-    const C = through(P, 8), L = [0];
+    const C = through([cockOf(sh), ...OVER, SHOOT.end], 8), L = [0];
     for (let i = 1; i < C.length; i++) L.push(L[i - 1] + dist(C[i], C[i - 1]));
-    return { C, L, total: L[L.length - 1], K };
+    return { C, L, total: L[L.length - 1] };
   }
   function alongPath(S, d) {
-    if (d >= S.total) return [SHOOT.end[0] - (d - S.total), SHOOT.end[1]];
+    if (d >= S.total) return SHOOT.end;
     let i = 1; while (i < S.L.length - 1 && S.L[i] < d) i++;
     return mix2(S.C[i - 1], S.C[i], clamp((d - S.L[i - 1]) / Math.max(1e-6, S.L[i] - S.L[i - 1])));
   }
   function shootDist(S, t) {
-    const span = SHOOT.t1 - AT.shoot, tau = clamp((t - AT.shoot) / span), v = SHOOT.vEnd * span / S.total, a = 2 - v;
-    return S.total * Math.min(1, a * tau + (1 - a) * tau * tau) + Math.max(0, t - SHOOT.t1) * SHOOT.vEnd;
+    const { v0, tau0, vEnd } = SHOOT, tau = clamp((t - AT.shoot) / (SHOOT.t1 - AT.shoot)), ex = Math.exp(-1 / tau0), E = 1 - ex;
+    const a = (1 - v0 * tau0 * E - vEnd / 3 + v0 * ex / 3) / (2 / 3 - tau0 * E + ex / 3), b = vEnd - a - (v0 - a) * ex;
+    return S.total * (a * tau + (v0 - a) * tau0 * (1 - Math.exp(-tau / tau0)) + b * tau ** 3 / 3);
   }
-  const shootRoute = (sh, hand) => [[sh[0] + 8, sh[1] - 140], [PORT + 378, ROAD + 104], ...OVER].filter((p, i) => i < 2 || p[0] > hand[0] + 60);
+  function trailVia(sh, S, d, hand) {
+    const via = [besideHead(sh)];
+    for (let s = TRAIL.from; s < d - TRAIL.gap; s += TRAIL.step) {
+      const p = alongPath(S, s), prev = via[via.length - 1], f = dist(prev, p) / Math.max(1e-6, dist(prev, p) + dist(p, hand));
+      via.push(mix2(mix2(prev, hand, f), p, ease(clamp((d - TRAIL.gap - s) / TRAIL.step))));
+    }
+    return via;
+  }
   function leftArm(t, B) {
     if (t < 40.52) return {};
     if (t < AT.take - .06) {
       const k = ease(seg(t, 40.52, 40.68)), out = ease(seg(t, 41.02, 41.16));
       let lift = 0; for (const at of PATS) lift = Math.max(lift, bump(t, at - .12, at));
-      const p = mix2(add2(arcPt(B.coolL, PAT, -34, k), [0, -18 * lift]), EMPTY, out);
-      return { handL: p, handMixL: 1, lenL: lerp(.45, lenFor(B.shL, p, 1.15), k), bendL: lerp(-1, -.4, k), gripL: 'open', frontL: false,
-        aimL: Math.PI - .12 + .25 * lift - 1.2 * out, wristFromL: .5, aimMixL: k };
+      const p = mix2(add2(arcPt(B.coolL, PAT, 26, k), [0, -18 * lift]), EMPTY, out);
+      return { handL: p, handMixL: 1, lenL: lerp(.45, lenFor(B.shL, p, 1.15), k), bendL: lerp(-1, -.4, k), gripL: out > .4 ? 'wave' : 'open', frontL: false,
+        aimL: lerp(Math.PI - .12 + .25 * lift, EMPTY_AIM, out), wristFromL: .5, aimMixL: k };
     }
     const scared = add2(B.shL, [-150, -70]);
     if (t < 42.05) {
       const k = backOut(seg(t, AT.take - .06, AT.take + .14)), shiver = 1 - seg(t, 41.8, 42.05);
       const p = add2(mix2(EMPTY, scared, k), [5 * Math.sin(t * TAU * 9) * shiver, 4 * Math.sin(t * TAU * 7) * shiver]);
-      return { ...armL(B, p), bendL: -.4, gripL: 'wave', aimL: Math.PI - 1.32, wristFromL: .2, aimMixL: 1 - ease(seg(t, AT.take - .06, AT.take + .06)) };
+      return { ...armL(B, p), bendL: -.4, gripL: 'wave', aimL: EMPTY_AIM, wristFromL: .2, aimMixL: 1 - ease(seg(t, AT.take - .06, AT.take + .06)) };
     }
-    const hang = add2(B.shL, [-30, 150]);
+    const hang = add2(B.shL, [8, 140]);
     if (t < AT.determined) {
       const k = ease(seg(t, 42.05, 42.5));
-      return { ...armL(B, mix2(scared, hang, k), 1.12), bendL: lerp(-.4, .5, k), wristL: .2 * (1 - k), gripL: 'open' };
+      return { ...armL(B, mix2(scared, hang, k), 1.12), bendL: lerp(-.4, -.3, k), wristL: .2 * (1 - k), gripL: 'open', frontL: false };
     }
-    const S = shootPath(B.shL);
     if (t < AT.shoot) {
       const k = ease(seg(t, 43.02, 43.38)), coil = ease(seg(t, 43.34, AT.shoot)), shake = 2.5 * Math.sin(t * TAU * 19) * seg(t, 43.28, AT.shoot);
-      const to = add2(bez2(hang, add2(B.shL, [60, -40]), S.K, k), [14 * coil + shake, -6 * coil]);
-      return { ...armL(B, to), gripL: 'fist', frontL: false, bendL: .5 };
+      const to = add2(bez2(hang, add2(B.shL, [-150, -60]), cockOf(B.shL), k), [10 * coil + shake, 8 * coil]);
+      return { ...armL(B, to, 1.25), gripL: 'fist', frontL: false, bendL: .6 };
     }
-    const hand = alongPath(S, shootDist(S, t));
-    const o = { handL: hand, handMixL: 1, gripL: 'open', frontL: hand[0] < B.shL[0] + 60, wristL: 0, bendL: .5, lenL: lenFor(B.shL, hand, 1.04) };
-    if (hand[1] < 300) { o.viaL = shootRoute(B.shL, hand); o.sagL = .4; }
-    return o;
+    const S = shootPath(shootShoulder()), d = shootDist(S, Math.min(t, SHOOT.t1)), hand = alongPath(S, d), aim = shootAim(t);
+    const via = trailVia(B.shL, S, d, hand), wrist = add2(hand, rot2([-GLOVE, 0], aim)), last = via[via.length - 1];
+    return { handL: add2(wrist, rot2([GLOVE, 0], Math.atan2(wrist[1] - last[1], wrist[0] - last[0]))), handMixL: 1, gripL: 'open', frontL: false,
+      viaL: via, sagL: .4, lenL: lenFor(B.shL, hand, 1.04), aimL: aim, wristFromL: 0 };
+  }
+  const shootShoulder = () => RIG.points(BX, BY, U, bodyPoseAt(AT.shoot)).shoulderL;
+  function handOnShoot(t) {
+    const S = shootPath(shootShoulder());
+    return alongPath(S, shootDist(S, Math.min(t, SHOOT.t1)));
+  }
+  function shootAim(t) {
+    const a = handOnShoot(t + 1 / 48), b = handOnShoot(Math.max(AT.shoot, t - 1 / 48));
+    return Math.atan2(a[1] - b[1], a[0] - b[0]);
   }
 
   function moodAt(t) {
@@ -382,15 +416,18 @@
     else if (t < AT.peek + .3) { m.emote = 'music'; m.emoteK = 1 - seg(t, AT.peek, AT.peek + .25); m.emoteAge = undefined; }
     return m;
   }
+  function bodyPoseAt(t) {
+    const base = RIG.cool(t);
+    return { ...base, ...bodyAt(t, base) };
+  }
   function boltPose(t) {
-    const base = RIG.cool(t), mood = moodAt(t), body = bodyAt(t, base, mood);
-    const bodyPose = { ...base, ...body };
+    const mood = moodAt(t), bodyPose = bodyPoseAt(t);
     const P = RIG.points(BX, BY, U, bodyPose);
     const B = { sh: P.shoulderR, shL: P.shoulderL, hip: P.handR, coolL: P.handL, face: P.face, top: P.top };
     const F = faceAt(t, mood), R = rightArm(t, B), L = leftArm(t, B);
     const pose = {
       ...bodyPose, ...R, ...L,
-      mood: mood.mood, emote: mood.emote, emoteK: mood.emoteK, emoteAge: mood.emoteAge,
+      mood: mood.mood, zap: t >= AT.peek && t < AT.determined ? 0 : undefined, emote: mood.emote, emoteK: mood.emoteK, emoteAge: mood.emoteAge,
       tint: mood.tint, tintK: mood.tintK, tintFrom: mood.tintFrom, tintTo: mood.tintTo, tintMix: mood.tintMix,
       mouth: null, brows: null, shades: null, blush: 0, gloom: 0, draw: faceHook(F), boilKey: 'bolt',
     };
@@ -469,19 +506,6 @@
       if (s > 2) paint(heartPts(x, y, s), { wash: '#E2476E', ink: PAL.ink, sw: .55 * Math.min(1, s / 5) });
     }
   }
-  function smoke(t, pts) {
-    if (t < 37.36 || t > 37.86) return;
-    const tip = tipOf(pts), grow = ease(seg(t, 37.36, 37.5)), blow = ease(seg(t, 37.55, 37.74)), fade = 1 - ease(seg(t, 37.68, 37.86));
-    const P = [];
-    for (let i = 0; i < 6; i++) {
-      const f = i / 5, rise = 64 * grow * f;
-      P.push([tip[0] + 9 * Math.sin(f * 6 + t * 8) * f + 70 * blow * f * f, tip[1] - 4 - rise + 26 * blow * f * f]);
-    }
-    boilSeed('click smoke');
-    paint(ribbon(P, 13 * fade + 2, 5 * fade + 1), { wash: '#F6F1FA', washOp: 240 * fade, ink: PAL.ink, sw: .7 * fade, curv: .4 });
-    const top = P[P.length - 1];
-    paint(ellPts(top[0] + 4, top[1] - 4, 9 * fade + 1, 8 * fade + 1, 12), { wash: '#F6F1FA', washOp: 240 * fade, ink: PAL.ink, sw: .7 * fade });
-  }
   function fistGlow(t, pts) {
     const k = ease(seg(t, AT.fist, AT.fist + .3)) * (1 - ease(seg(t, AT.determined - .05, AT.determined + .3)));
     if (k <= .01) return;
@@ -492,7 +516,13 @@
     const age = t - AT.take;
     if (age < 0 || age > .9) return;
     boilSeed('click bang');
-    emote('!', pts.top[0] - 18, pts.top[1] - 46, U * 1.35, seg(age, 0, .1) * (1 - seg(age, .7, .9)), age);
+    emote('!', pts.top[0] + 104, pts.top[1] - 4, U * 1.35, seg(age, 0, .1) * (1 - seg(age, .7, .9)), age);
+  }
+  function bulb(t, pts) {
+    const age = t - AT.idea;
+    if (age < 0 || age > .36) return;
+    boilSeed('click bulb');
+    emote('bulb', pts.top[0] + 70, pts.top[1] + 40, U * 1.1, seg(age, 0, .08) * (1 - seg(age, .26, .36)), age);
   }
   function recoilLines(t, at, pts) {
     const k = seg(t, at + .02, at + .18);
@@ -514,8 +544,8 @@
   }
   function whoosh(t, pts) {
     if (t < AT.shoot + .01) return;
-    const A = pts.armPathL, h = A[A.length - 1], w = A[Math.max(0, A.length - 4)];
-    speedLines(h[0], h[1], 220, [h[0] - w[0], h[1] - w[1]], 1, { key: 'shoot', spread: 46 });
+    const a = shootAim(t), h = pts.handL;
+    speedLines(h[0], h[1], 220, [Math.cos(a), Math.sin(a)], 1, { key: 'shoot', spread: 46 });
   }
 
   function scene(t) {
@@ -535,14 +565,14 @@
     recoilLines(t, AT.catch2, pts);
     burstTicks(t, AT.press1, FLY1.born);
     burstTicks(t, AT.press2, FLY3.born);
-    smoke(t, pts);
     heartPops(t);
     dust(t);
     bang(t, pts);
+    bulb(t, pts);
     whoosh(t, pts);
     let sp = null;
     if (t >= AT.press1 && t < AT.catch1) sp = flight(t, FLY1);
-    else if (t >= AT.flick && t < AT.heart) sp = flickSpark(t, tipOf(drawlessPoints(AT.flick)));
+    else if (t >= AT.flick && t < AT.heart) sp = flickSpark(t, tipOf(drawlessPoints(AT.flick + .04)));
     else if (t >= AT.press2 && t < AT.catch2) sp = flight(t, FLY3);
     if (sp) clickSpark(sp.p[0], sp.p[1], SPARK_S, { state: sp.state, age: sp.age, dir: sp.dir, trail: 60, key: 'free' });
     drawHand(t);

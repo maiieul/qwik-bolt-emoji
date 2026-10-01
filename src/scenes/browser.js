@@ -41,11 +41,18 @@
 
   const pulseIn = (s, a, w) => { const k = (s - a) / w; return k > 0 && k < 1 ? Math.sin(Math.PI * k) : 0; };
 
+  const SHIMMER_LEAD = .2;
   function pageC1(t) {
     const parts = {};
-    for (const P of PARCELS) if (t >= doneAt(P)) for (const p of P.parts) parts[p] = 1;
+    for (const P of PARCELS) if (t >= doneAt(P)) for (const p of P.parts) if (p !== 'skeleton') parts[p] = 1;
     const hd = doneAt(PARCELS[0]);
-    return { parts, badge: t < hd ? 0 : lerp(-.6, 0, seg(t, hd, hd + .3)), t };
+    return { parts, badge: t < hd ? 0 : lerp(-.6, 0, seg(t, hd, hd + .3)), t: t + SHIMMER_LEAD };
+  }
+  function pagePartC1(kind, [x0, y0, x1, y1], o) {
+    if (kind !== 'skeleton') return pagePart(kind, x0, y0, x1 - x0, y1 - y0, o);
+    const cy = (y0 + y1) / 2;
+    // page.js shimmer slants by absolute y; draw near y 0
+    push(); translate(0, cy); pagePart(kind, x0, y0 - cy, x1 - x0, y1 - y0, o); pop();
   }
 
   function tubeParcels(t) {
@@ -69,8 +76,8 @@
     const R = [lerp(from[0], Un[0], kx0), lerp(from[1], Un[1], ky), lerp(from[2], Un[2], kx1), lerp(from[3], Un[3], ky)];
     const fx = x => R[0] + (x - Un[0]) / (Un[2] - Un[0]) * (R[2] - R[0]), fy = y => R[1] + (y - Un[1]) / (Un[3] - Un[1]) * (R[3] - R[1]);
     P.parts.forEach((kind, i) => {
-      const [a, b, c, d] = slots[i], x0 = fx(a), y0 = fy(b);
-      pagePart(kind, x0, y0, fx(c) - x0, fy(d) - y0, { k: 1, t, ...(kind === 'header' ? { badge: 0 } : {}) });
+      const [a, b, c, d] = slots[i];
+      pagePartC1(kind, [fx(a), fy(b), fx(c), fy(d)], { k: 1, t: t + SHIMMER_LEAD, ...(kind === 'header' ? { badge: 0 } : {}) });
     });
   }
   function outParcels(t) {
@@ -82,7 +89,7 @@
     }
   }
 
-  const B_STUCK = 18.84, B_SLURP = 18.96, B_GONE = 19.07, B_OUT = 19.1, B_FREE = 19.32, B_LAND = 19.5;
+  const B_STUCK = 18.8, B_SLURP = 18.88, B_GONE = 18.96, B_OUT = 18.98, B_FREE = 19.3, B_LAND = 19.5;
   const RIDE_LEN = 420, HEAD_X = 4990, RIDE_AT17 = 2827 + 470, RIDE_V17 = 760, RIDE_HIT = 1700;
   const TIP_LEN = Math.hypot(TOPP[0] - BOT[0], TOPP[1] - BOT[1]);
   function rideHead(t) {
@@ -148,19 +155,20 @@
     leg: t => lerp(0, 1, backOut(seg(t, B_FREE + .03, B_LAND - .03))),
     arm: t => lerp(0, 1, backOut(seg(t, B_FREE + .05, B_LAND + .04))),
   };
-  const C1_MOOD = [[17, 'determined'], [B_STUCK, 'determined', STRAIN], [B_FREE, 'excited'], [B_LAND, 'proud']];
-  const GLANCE = 19.84, SHOW = 19.98;
-  function glanceC1(t, mood) {
-    const g = ease(seg(t, GLANCE, GLANCE + .14));
-    if (g <= 0) return mood;
-    const blink = Math.max(0, 1 - Math.abs(t - GLANCE) / .07), show = backOut(seg(t, SHOW, SHOW + .24));
-    const o = { ...mood, eyes: t < GLANCE ? mood.eyes : 'look', lookX: .95 * g, lookY: .55 * g, squint: Math.max(mood.squint || 0, blink), mouth: t < GLANCE + .1 ? mood.mouth : 'smirk' };
+  const FLING = .8;
+  const C1_MOOD = [[17, 'determined'], [B_STUCK, 'determined', STRAIN], [B_FREE, 'excited'], [B_LAND, 'proud', { eyes: 'look' }]];
+  const GLANCE = 19.58, SHOW = 19.72, TILT = 19.94;
+  function presentC1(t, mood) {
+    const g = ease(seg(t, GLANCE, GLANCE + .12)), show = backOut(seg(t, SHOW, SHOW + .24)), tilt = ease(seg(t, TILT, TILT + .2));
+    const o = akimbo({ ...mood, lookX: .95 * g, lookY: .55 * g, mouth: t < GLANCE + .1 ? mood.mouth : 'smirk', rot: (mood.rot || 0) + .06 * tilt,
+      emoteK: (mood.emoteK ?? 1) * (1 - seg(t, SHOW, SHOW + .2)) });
     if (show <= 0) return o;
-    const rest = spotOf(mood, 'R', 'hip'), card = [5000, 752], to = mix2(rest, card, show);
-    return { ...o, handR: to, handMixR: 1, gripR: show > .4 ? 'open' : 'fist', wristR: .45 * show, lenR: Math.max(.8, lerp(.8, 1.08, show)), frontR: true, lean: (o.lean || 0) + .05 * ease(seg(t, SHOW, SHOW + .3)) };
+    const from = RIG.points(BX, BY, U, o).handR, card = [5000, 752], to = mix2(from, card, show);
+    return { ...o, handR: to, handMixR: 1, gripR: show > .4 ? 'open' : 'fist', wristR: .45 * show, lenR: lerp(o.lenR ?? 1, 1.08, Math.min(1, show)), frontR: true,
+      lean: (o.lean || 0) + .05 * ease(seg(t, SHOW, SHOW + .3)) };
   }
   function boltC1(t, front) {
-    const mood = glanceC1(t, RIG.emotions(t, C1_MOOD));
+    const mood = RIG.emotions(t, C1_MOOD);
     if (t < B_OUT || (t < B_FREE) !== !front) return;
     if (t < B_FREE) {
       const X = extrude(t), [gx, gy] = groundFor(X.pelvis);
@@ -176,7 +184,7 @@
       const kx = 1 - (1 - EX.kx) * boing, ky = 1 + (EX.ky - 1) * boing;
       const rot = rotFor(lerp(EXIT.ang, UPRIGHT, ease(seg(k, 0, .82))), kx, ky);
       const [gx] = groundFor(pel), lift = (BY - RIG.K.hipH * U - pel[1]) / U;
-      let o = { ...mood, dy: -lift, sq: 0, dx: 0, lean: 0, rot, sx: kx, sy: ky, wind: .9 * Math.sin(Math.PI * seg(t, B_FREE, B_LAND - .02)), boilKey: 'bolt' }, x = gx;
+      let o = { ...mood, aR: (mood.aR ?? 1) - FLING * ease(seg(t, B_FREE, B_FREE + .08)), dy: -lift, sq: 0, dx: 0, lean: 0, rot, sx: kx, sy: ky, wind: .9 * Math.sin(Math.PI * seg(t, B_FREE, B_LAND - .02)), boilKey: 'bolt' }, x = gx;
       if (has('legLen') && has('lenL')) {
         const legLen = LIMBS.leg(t), arm = LIMBS.arm(t), want = RIG.points(gx, BY, U, o).face, got = RIG.points(gx, BY, U, { ...o, legLen }).face;
         o = { ...o, legLen, lenL: arm, lenR: arm, noSpark: true, dy: o.dy + (want[1] - got[1]) / U };
@@ -187,7 +195,7 @@
       return;
     }
     const age = t - B_LAND, land = .3 * Math.exp(-age * 7) * Math.cos(age * 20);
-    qwik(BX, BY, U, { ...mood, sq: (mood.sq || 0) + land, boilKey: 'bolt' });
+    qwik(BX, BY, U, { ...presentC1(t, { ...mood, sq: (mood.sq || 0) + land, aR: (mood.aR ?? 1) - FLING * (1 - ease(seg(t, B_LAND, B_LAND + .2))) }), boilKey: 'bolt' });
   }
 
   function c1(t) {
@@ -195,6 +203,7 @@
     const push = ease(seg(t, 19.65, 20.5));
     camBegin(lerp(5200, 5290, push), lerp(580, 640, push), lerp(.95, 1.04, push));
     houseSet(t, { page: pageC1(t), nozzleBulge: bulge });
+    if (t >= doneAt(PARCELS[2])) pagePartC1('skeleton', CARD, { k: 1, t: t + SHIMMER_LEAD });
     tubeContents(t, tubeParcels(t));
     tubeBolt(t);
     boltC1(t, false);
@@ -206,12 +215,12 @@
     if (t > 20.25) irisTo(seg(t, 20.25, 20.5) * .5, ...card);
   }
 
-  const HIPS = { handL: 'hip', handR: 'hip', aL: -1.6, aR: -1.6, bendL: -1, bendR: -1, gripL: 'fist', gripR: 'fist' };
+  const HIP_L = { handL: 'hip', aL: -1.6, bendL: -1, gripL: 'fist' };
   const DESK_MOOD = [
-    [22.5, 'bored', { ...HIPS, lookX: .55, lookY: -.6 }],
-    [22.75, 'surprised', { handL: 'hip', aL: -1.6, bendL: -1, gripL: 'fist', lookX: .45, lookY: -.75 }],
+    [22.5, 'bored', { ...HIP_L, lenR: .8, lookX: .55, lookY: -.6 }],
+    [22.75, 'surprised', { ...HIP_L, lookX: .45, lookY: -.75 }],
     [23.22, 'happy', { eyes: 'look', lookX: .8, lookY: .55 }],
-    [24.2, 'proud'],
+    [24.2, 'proud', { eyes: 'look' }],
     [26, 'sleepy'],
     [27, 'happy'],
   ];
@@ -241,27 +250,32 @@
 
   const tapToe = t => { const ph = frac(bpOf(t) * 2); return ph < .22 ? easeOut(ph / .22) : ph < .84 ? 1 : 1 - easeIn((ph - .84) / .16); };
 
+  const ADMIRE = [[24.2, [1, .8]], [24.44, [.95, .7]], [24.56, [.3, .18]], [25.0, [.9, .22]], [25.6, [.86, .3]]];
+  function deskLook(t, mood, E) {
+    if (t >= 24.2) { const [lookX, lookY] = kf(t, ADMIRE); return { lookX, lookY }; }
+    const face = RIG.points(BX, BY, U, mood).face, look = E || { x: CARD[0] + 140, y: CARD_Y };
+    const lx = clamp((look.x - face[0]) / 260, -1, 1), ly = clamp((look.y - face[1]) / 260, -1, 1), k = ease(seg(t, 22.8, 22.9));
+    return { lookX: lerp(mood.lookX || 0, lx, k), lookY: lerp(mood.lookY || 0, ly, k) };
+  }
+
   function deskBolt(t) {
     let mood = RIG.emotions(t, DESK_MOOD);
     if (t < 22.75) mood = { ...mood, heelR: -1.15 * tapToe(t) };
     const E = envAt(t);
-    if (t >= 22.8 && t < 24.25) {
-      const face = RIG.points(BX, BY, U, mood).face, look = E || { x: CARD[0] + 140, y: CARD_Y };
-      const lx = clamp((look.x - face[0]) / 260, -1, 1), ly = clamp((look.y - face[1]) / 260, -1, 1), k = ease(seg(t, 22.8, 22.9)) * (1 - ease(seg(t, 24.05, 24.2)));
-      mood = { ...mood, lookX: lerp(mood.lookX || 0, lx, k), lookY: lerp(mood.lookY || 0, ly, k) };
-    }
+    if (t >= 22.8 && t < 26) mood = { ...mood, ...deskLook(t, mood, E) };
     if (t >= 22.75 && t < 24.3) mood = { ...mood, handL: 'hip', handMixL: 1, gripL: 'fist' };
-    if (t >= 22.88 && t < 24.25) {
-      const reach = ease(seg(t, 22.88, 23.08)), release = ease(seg(t, 23.72, 24.18));
+    if (t >= 22.88 && t < 24.6) {
+      const reach = ease(seg(t, 22.88, 23.08)), release = ease(seg(t, 23.72, 24.02)), home = ease(seg(t, 24.02, 24.42));
       const tgt = E && !E.free ? handOnEnv(E) : t < ENV.catch ? [CATCH[0] - 30, CATCH[1] + 12] : [SLIDE_X1 - ENV_HW + 6, CARD_Y + 8];
       const pulled = [lerp(tgt[0], tgt[0] - 40, release), lerp(tgt[1], tgt[1] - 30, release)];
-      mood = { ...mood, handR: pulled, handMixR: reach * (1 - release), gripR: t < ENV.catch - .03 ? 'open' : t < 23.7 ? 'grab' : 'open', frontR: true,
-        lean: (mood.lean || 0) + .07 * Math.sin(Math.PI * seg(t, 23.25, 23.95)) };
+      mood = { ...mood, handR: home > 0 ? mix2(pulled, hipOut(mood, 'R'), home) : pulled, handMixR: reach, frontR: true,
+        gripR: t < ENV.catch - .03 ? 'open' : t < 23.7 ? 'grab' : home > .55 ? 'fist' : 'open', lean: (mood.lean || 0) + .07 * Math.sin(Math.PI * seg(t, 23.25, 23.95)) };
     }
-    if (t >= DUST.t0 && t < DUST.t1) mood = { ...mood, ...dustHands(t, mood) };
+    mood = akimbo(mood);
+    if (t >= 24.2 && t < 26) mood = proudHold(t, mood);
     mood = yawnPose(t, mood);
     const W = whistlePose(t, mood);
-    mood = W.mood;
+    mood = akimbo(W.mood);
     if (E && !E.free) envelope(E.x, E.y, ENV_S, { rot: E.rot, key: 'reviews' });
     if (t >= ENV.post && t < ENV.posted + .03) {
       const [x0, y0, x1, y1] = CARD, gulp = Math.sin(Math.PI * seg(t, ENV.post + .1, ENV.posted + .03)), dx = 6 * gulp, dy = 9 * gulp;
@@ -269,27 +283,44 @@
     }
     qwik(BX, BY, U, { ...mood, boilKey: 'bolt' });
     if (W.whistle) {
-      whistle(W.whistle.x, W.whistle.y, 1, { blow: W.whistle.blow, key: 'd1' });
-      if (W.whistle.pop < .4) sparkle(W.whistle.x - 40, W.whistle.y, .5, W.whistle.pop, { key: 'whistle' });
+      const [wx, wy] = sub2(RIG.points(BX, BY, U, mood).handL, WH_GRIP);
+      whistle(wx, wy, 1, { blow: W.whistle.blow, key: 'd1' });
+      if (W.whistle.pop < .4) sparkle(wx - 40, wy, .5, W.whistle.pop, { key: 'whistle' });
     }
     if (E && E.free) envelope(E.x, E.y, ENV_S, { rot: E.rot, flutter: E.flutter, key: 'reviews' });
-    if (t >= ENV.poof - .02) poof(CARD[0] + 70, CARD_Y, .8, t - ENV.poof, { key: 'swap' });
-    if (t >= DUST.t0 && t < DUST.t1 + .4) for (const [i, at] of DUST.puffs.entries()) if (t >= at) {
-      const P = RIG.points(BX, BY, U, mood);
-      poof(P.handR[0] + 40, P.handR[1] + 4 - 22 * i, .38, t - at, { key: 'dust ' + i, life: .5 });
+    if (t >= ENV.poof - .02) poof(CARD[0] + 70, CARD_Y, .8, t - ENV.poof, { key: 'swap', life: .45 });
+    if (t >= CLAP.hits[0] && t < CLAP.rest + .3) {
+      const meet = clapPoint(mood);
+      CLAP.hits.forEach((at, i) => poof(meet[0], meet[1] - 46, .66, t - at, { key: 'clap ' + i, life: .55 }));
     }
   }
-  const DUST = { t0: 24.92, in: 25.08, out: 25.46, t1: 25.66, puffs: [25.17, 25.33] };
-  function dustHands(t, mood) {
-    const k = ease(seg(t, DUST.t0, DUST.in)) * (1 - ease(seg(t, DUST.out, DUST.t1))), brush = Math.sin(seg(t, DUST.in, DUST.out) * TAU * 2);
-    const hipL = spotOf(mood, 'L', 'hip'), hipR = spotOf(mood, 'R', 'hip'), c = RIG.points(BX, BY, U, mood).face;
-    const toL = mix2(hipL, [c[0] - 22, c[1] + 128], k), toR = mix2(hipR, [c[0] + 22, c[1] + 116 + 22 * brush], k);
-    return { handL: toL, handMixL: 1, handR: toR, handMixR: 1, gripL: k > .3 ? 'open' : 'fist', gripR: k > .3 ? 'open' : 'fist', frontL: true, frontR: true,
-      wristL: .5 * k, wristR: -.3 * k, lenL: .9, lenR: 1 };
+
+  const CLAP = { in: 24.8, hits: [25.0, 25.5], out: 25.54, rest: 25.84 };
+  const SMILE = [25.24, 25.46];
+  const clapPoint = mood => add2(RIG.points(BX, BY, U, mood).face, [8, 150]);
+  function proudHold(t, mood) {
+    const nod = Math.sin(Math.PI * seg(t, 24.86, 25.2)), blink = Math.max(0, 1 - Math.abs(t - SMILE[0]) / .06, 1 - Math.abs(t - SMILE[1]) / .06);
+    const chest = ease(seg(t, 24.2, 24.5)) * (1 - ease(seg(t, 25.7, 26))), toPage = ease(seg(t, 24.62, 25.02)) * (1 - ease(seg(t, 25.5, 25.9)));
+    let m = { ...mood, dy: (mood.dy || 0) + .4 * nod, sq: (mood.sq || 0) + .05 * nod, rot: (mood.rot || 0) - .035 * chest + .05 * nod, lean: (mood.lean || 0) + .035 * toPage,
+      lookY: (mood.lookY || 0) + .3 * nod, squint: Math.max(mood.squint || 0, blink) };
+    if (t >= SMILE[0] && t < SMILE[1]) m.eyes = 'closed';
+    if (t < CLAP.in || t >= CLAP.rest) return m;
+    const meet = clapPoint(m), hip = { L: m.handL, R: m.handR };
+    const inK = easeIn(seg(t, CLAP.in + .06, CLAP.hits[0])), back = easeOut(seg(t, CLAP.out, CLAP.rest)), cock = Math.sin(Math.PI * seg(t, CLAP.in, CLAP.in + .1));
+    const apart = 1 - Math.pow(1 - 2 * seg(t, CLAP.hits[0], CLAP.hits[1]), 4);
+    for (const [S, sd] of [['L', -1], ['R', 1]]) {
+      const shut = [meet[0] + sd * (5 + 50 * apart), meet[1] - 14 * apart], from = add2(hip[S], [sd * 12 * cock, -10 * cock]);
+      m['hand' + S] = t < CLAP.hits[0] ? mix2(from, shut, inK) : mix2(shut, hip[S], back);
+      m['grip' + S] = inK > .3 && back < .7 ? 'open' : 'fist';
+      m['handMix' + S] = 1;
+      m['front' + S] = true;
+      m['wrist' + S] = .9 * Math.min(inK, 1 - back);
+    }
+    return m;
   }
 
   function deskPage(t) {
-    const swap = seg(t, ENV.poof - .04, ENV.poof + .86);
+    const swap = seg(t, ENV.poof - .04, ENV.poof + .44);
     return swap >= 1 ? { parts: FULL, badge: 0, t } : { parts: GREY, badge: 0, swap, t };
   }
   function envBulge(t) { return Math.max(.85 * Math.sin(Math.PI * seg(t, 22.6, 22.8)), .3 * spring(t, 22.8, 9, 30)); }
@@ -300,21 +331,31 @@
   ];
 
   const YAWN = { lift: 26.08, chest: 26.18, head: 26.28, top: 26.46, snap: 26.66, pull: 26.78, drop: 26.94 };
+  const STRETCH = { aL: 1.36, aR: .6, lenL: 2.34, lenR: 3 };
   const spotOf = (mood, side, spot) => RIG.points(BX, BY, U, { ...mood, ['hand' + side]: spot, ['handMix' + side]: 1 })['hand' + side];
+  const hipOut = (mood, side) => add2(spotOf(mood, side, 'hip'), rot2([(side === 'L' ? -2.2 : 1.3) * U, -.3 * U], (mood.rot || 0) + (mood.lean || 0)));
+  function akimbo(mood) {
+    const o = { ...mood };
+    for (const S of ['L', 'R']) if (o['hand' + S] === 'hip') {
+      o['hand' + S] = hipOut(mood, S);
+      o['bend' + S] = lerp(mood['bend' + S] ?? -1, -1, clamp(mood['handMix' + S] ?? 1));
+    }
+    return o;
+  }
   function yawnPose(t, mood) {
     if (t < YAWN.lift - .02 || t > 27.06) return mood;
     const toChest = ease(seg(t, YAWN.lift, YAWN.chest)), toHead = ease(seg(t, YAWN.chest - .02, YAWN.head));
     const upL = ease(seg(t, YAWN.head - .03, YAWN.top)), upR = ease(seg(t, YAWN.head, YAWN.top + .05));
     const pull = seg(t, YAWN.snap, YAWN.pull), drop = ease(seg(t, YAWN.pull - .02, YAWN.drop));
     const boing = spring(t, YAWN.pull - .02, 8, 30), grow = easeOut(seg(t, YAWN.head + .02, YAWN.top + .1));
-    const lenK = t < YAWN.snap ? lerp(1, 2.9, grow) : lerp(2.9, 1, easeIn(pull)) - .35 * boing;
+    const stretch = t < YAWN.snap ? grow : 1 - easeIn(pull), recoil = t < YAWN.snap ? 0 : .35 * boing;
     const raised = Math.max(toChest * .5, toHead) * (1 - drop), shiver = t > YAWN.top && t < YAWN.snap ? Math.sin(t * 70) * .03 : 0;
     const mouthOn = seg(t, YAWN.lift + .06, YAWN.head + .04) * (1 - seg(t, YAWN.snap + .02, YAWN.pull + .06));
     const m = {
       ...mood,
-      aL: lerp(mood.aL ?? -1.5, 1.28 + shiver, toHead * (1 - drop)), aR: lerp(mood.aR ?? -1.5, 1.1 - shiver, toHead * (1 - drop)),
+      aL: lerp(mood.aL ?? -1.5, STRETCH.aL + shiver, toHead * (1 - drop)), aR: lerp(mood.aR ?? -1.5, STRETCH.aR - shiver, toHead * (1 - drop)),
       bendL: lerp(mood.bendL ?? -.1, .1, raised), bendR: lerp(mood.bendR ?? -.1, -.12, raised),
-      lenL: Math.max(.55, lenK), lenR: Math.max(.55, lenK - .2 * grow * (1 - drop)),
+      lenL: Math.max(.55, lerp(1, STRETCH.lenL, stretch) - recoil), lenR: Math.max(.55, lerp(1, STRETCH.lenR, stretch) - recoil),
       gripL: raised > .3 ? 'fist' : mood.gripL, gripR: raised > .3 ? 'fist' : mood.gripR,
       sq: (mood.sq || 0) - .17 * raised + .16 * Math.max(0, boing) * drop, dy: (mood.dy || 0) - .55 * raised, heelL: .95 * raised, heelR: .75 * raised,
       mouth: mouthOn > .12 ? 'yawn' : mood.mouth, mouthK: mouthOn > .12 ? mouthOn : 1, eyes: raised > .5 ? 'squeeze' : mood.eyes, rot: (mood.rot || 0) + .04 * raised,
@@ -335,7 +376,7 @@
     return m;
   }
 
-  const WH = { grab: 27.04, at: 27.22, blow: 27.24, stop: 27.62, away: 27.84 };
+  const WH = { grab: 27.04, at: 27.22, blow: 27.24, stop: 27.62, away: 27.84 }, WH_GRIP = [-42, 14];
   function mouthOf(mood) {
     const P = RIG.points(BX, BY, U, mood), th = (mood.rot || 0) + (mood.lean || 0);
     return [P.face[0] - 1.45 * U * Math.sin(th), P.face[1] + 1.45 * U * Math.cos(th)];
@@ -350,13 +391,13 @@
     const mouth = mouthOf(m), up = ease(seg(t, WH.grab, WH.at)), down = ease(seg(t, WH.stop + .04, WH.away));
     const low = [mouth[0] - 30, mouth[1] + 150], tip = [lerp(low[0] + 40, mouth[0] - 2, up), lerp(low[1], mouth[1] + 4, up)];
     const held = [lerp(tip[0], low[0] + 30, down), lerp(tip[1], low[1] - 10, down)];
-    m = { ...m, handL: [held[0] - 42, held[1] + 14], handMixL: ease(seg(t, WH.grab - .02, WH.grab + .1)), gripL: 'fist', frontL: true, handR: 'hip', handMixR: ease(seg(t, 27.0, 27.2)), gripR: 'fist' };
-    return { mood: m, whistle: { x: held[0], y: held[1], blow: blowing, pop: t - WH.grab } };
+    m = { ...m, handL: add2(held, WH_GRIP), handMixL: ease(seg(t, WH.grab - .02, WH.grab + .1)), gripL: 'fist', frontL: true, handR: 'hip', handMixR: ease(seg(t, 27.0, 27.2)), gripR: 'fist' };
+    return { mood: m, whistle: { blow: blowing, pop: t - WH.grab } };
   }
   function ringsAt(t) {
     const k = seg(t, WH.blow + .04, 27.92);
     if (k <= 0 || k >= 1) return null;
-    const u = Math.pow(k, 1.55), P0 = [4710, 545], P1 = [4560, 430], P2 = [4330, 178], P3 = [3925, 156], m = 1 - u;
+    const u = Math.pow(k, 1.55), P0 = [4710, 545], P1 = [4715, 170], P2 = [4470, 160], P3 = [3925, 156], m = 1 - u;
     const p = [0, 1].map(i => m * m * m * P0[i] + 3 * m * m * u * P1[i] + 3 * m * u * u * P2[i] + u * u * u * P3[i]);
     return { x: p[0], y: p[1] + 6 * Math.sin(t * 17), k: ease(seg(t, WH.blow + .04, WH.blow + .24)) };
   }
@@ -376,6 +417,7 @@
 
   const mix2 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
   const add2 = (a, b) => [a[0] + b[0], a[1] + b[1]];
+  const sub2 = (a, b) => [a[0] - b[0], a[1] - b[1]];
   const rot2 = (p, a) => [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a)];
   const bez3 = (a, b, c, d, k) => { const m = 1 - k; return [0, 1].map(i => m * m * m * a[i] + 3 * m * m * k * b[i] + 3 * m * k * k * c[i] + k * k * k * d[i]); };
   const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
@@ -411,16 +453,21 @@
     const e = lerp(ease(k), easeOut(k), .3), p = bez3(up, [up[0] + 80, up[1] + 150], [end[0] + 200, end[1] - 30], end, e);
     return { x: p[0], y: p[1], rot: .06 * (1 - k) + .2 * Math.sin(Math.PI * Math.min(1, k * 1.2)), squash: -.14 * (1 - seg(k, 0, .3)) + .1 * seg(k, .9, 1) };
   }
+  function heartLane() {
+    const P0 = carryPt('s2', D3.liftB), up = [P0[0] + 4, P0[1] - 18], end = [BIN.heart.x, BIN.heart.y];
+    return { P0, up, at: e => bez3(up, [up[0] - 70, up[1] + 140], [end[0] - 70, end[1] - 160], end, e) };
+  }
   function heartBox(t) {
     if (t < D3.liftB || t >= D3.inB) return null;
-    const P0 = carryPt('s2', D3.liftB), end = [BIN.heart.x, BIN.heart.y], up = [P0[0] + 4, P0[1] - 18];
+    const { P0, up, at } = heartLane();
     const pop = easeOut(seg(t, D3.liftB, D3.liftB + .08)), k = seg(t, D3.liftB + .06, D3.inB);
     if (k <= 0) return { x: lerp(P0[0], up[0], pop), y: lerp(P0[1], up[1], pop), rot: lerp(shellRot('s2', D3.liftB), .06, pop), squash: -.12 * pop };
-    const e = ease(k), sw = Math.sin(k * Math.PI * 2) * (1 - k);
-    return { x: lerp(up[0], end[0], e) + 14 * sw - 34 * Math.sin(Math.PI * e), y: lerp(up[1], end[1], e), rot: .06 * (1 - k) - .12 * sw, squash: -.1 * Math.sin(Math.PI * k) + .1 * seg(k, .9, 1) };
+    const sw = Math.sin(k * Math.PI * 2) * (1 - k), [x, y] = at(ease(k));
+    return { x: x + 8 * sw, y, rot: .06 * (1 - k) - .12 * sw, squash: -.1 * Math.sin(Math.PI * k) + .1 * seg(k, .9, 1) };
   }
   const gripA = B => [B.x + 27, B.y - 22];
   const gripB = B => [B.x + 4, B.y - 66];
+  const clockVia = () => { const [x, y] = heartLane().at(.5); return gripB({ x, y }); };
 
   function d3Lit(t) {
     const lit = (at) => t < at ? 0 : Math.min(1, easeOut(seg(t, at, at + .16)) + .25 * Math.exp(-(t - at) * 5) * Math.sin(seg(t, at, at + .5) * Math.PI));
@@ -445,6 +492,26 @@
         eyes: s.eyes, mouth: s.mouth, lookX: s.look, lookY: s.lookY, seed: s.seed, sq: s.sq,
         emote: s.emote, emoteK: s.emote ? 1 : 0, emoteAge: t + s.seed, boilKey: 'snail-' + id,
       });
+    }
+  }
+
+  // copy of sets.js portholeFront geometry and seed; keep in sync
+  const PORT = { c: [4415, 218], ro: [40, 128], ri: [26, 113] };
+  function portholeRing() {
+    const K = SETS.K, [cx, cy] = PORT.c, sw = s => s * Math.pow(lod(), -.5), half = [], inner = [], glint = [];
+    for (let i = 0; i <= 18; i++) {
+      const a = -Math.PI / 2 + Math.PI * i / 18;
+      half.push([cx + PORT.ro[0] * Math.cos(a), cy + PORT.ro[1] * Math.sin(a)]);
+      inner.push([cx + PORT.ri[0] * Math.cos(a), cy + PORT.ri[1] * Math.sin(a)]);
+      if (i >= 2 && i <= 10) glint.push([cx + (PORT.ro[0] - 5) * Math.cos(a), cy + (PORT.ro[1] - 5) * Math.sin(a)]);
+    }
+    boilSeed('set porthole front');
+    paint(half.concat(inner.reverse()), { wash: K.brass, ink: PAL.ink, sw: sw(1) });
+    inkLine(glint, sw(.9), K.brassLt, 'inkfine', .4);
+    if (lod() < .5) return;
+    for (let i = 1; i < 6; i++) {
+      const a = -Math.PI / 2 + Math.PI * i / 6;
+      paint(ellPts(cx + (PORT.ro[0] + PORT.ri[0]) / 2 * Math.cos(a), cy + (PORT.ro[1] + PORT.ri[1]) / 2 * Math.sin(a), 3.2, 3.2, 8), { wash: K.brassDk, ink: null });
     }
   }
 
@@ -477,16 +544,16 @@
   }
 
   function d3LeftArm(t, m) {
-    if (t < D3.reachA) return { handL: 'hip', handMixL: 1, aL: -1.6, bendL: -1, gripL: 'fist' };
-    const hip = spotOf(m, 'L', 'hip');
+    const hip = hipOut(m, 'L');
+    if (t < D3.reachA) return { handL: hip, handMixL: 1, aL: -1.6, bendL: -1, gripL: 'fist' };
     const BA = menuBox(t), onSnail = carryPt('s1', Math.min(t, D3.liftA)), snailGrip = gripA({ x: onSnail[0], y: onSnail[1] });
     if (t < D3.grabA) {
       const k = seg(t, D3.reachA, D3.grabA), to = mix2(hip, snailGrip, lerp(easeOut(k), backOut(k), .45));
-      return { handL: to, handMixL: 1, lenL: lenFor(m, 'L', to, 1.03), gripL: k < .4 ? 'fist' : 'open', bendL: .3, frontL: true };
+      return { handL: to, handMixL: 1, lenL: lenFor(m, 'L', to, 1), gripL: k < .4 ? 'fist' : 'open', bendL: -.3, frontL: true };
     }
     if (t < D3.inA) {
       const to = BA ? gripA(BA) : snailGrip;
-      return { handL: to, handMixL: 1, lenL: lenFor(m, 'L', to, 1.05), gripL: 'grab', bendL: .4, frontL: true };
+      return { handL: to, handMixL: 1, lenL: lenFor(m, 'L', to, 1.02), gripL: 'grab', bendL: -.3, frontL: true };
     }
     const C = coolAt(t), inBin = gripA(BIN.menu), k = ease(seg(t, D3.inA + .06, D3.inA + .36));
     if (k >= 1) return { handL: C.handL, handMixL: 1, lenL: C.lenL, gripL: C.gripL, wristL: C.wristL, viaL: C.viaL, sagL: C.sagL, bendL: C.bendL };
@@ -523,8 +590,9 @@
   }
   function d3RightArm(t, m) {
     const C = coolAt(t);
-    if (t < D3.reachB) return { handR: 'hip', handMixR: 1, aR: -1.6, bendR: -1, gripR: 'fist' };
-    const hipR = spotOf(m, 'R', 'hip'), { sh, o1, o2 } = overHead(m);
+    const hipR = hipOut(m, 'R');
+    if (t < D3.reachB) return { handR: hipR, handMixR: 1, aR: -1.6, bendR: -1, gripR: 'fist' };
+    const { sh, o1, o2 } = overHead(m), V = clockVia();
     const onSnail = carryPt('s2', Math.min(t, D3.liftB)), snailGrip = gripB({ x: onSnail[0], y: onSnail[1] });
     if (t < D3.grabB) {
       const k = seg(t, D3.reachB, D3.grabB), R = routeAt([hipR, o1, o2, [snailGrip[0] + 46, snailGrip[1] - 24], snailGrip], lerp(ease(k), easeOut(k), .4), [1, 2]);
@@ -532,16 +600,16 @@
     }
     if (t < D3.inB + .03) {
       const BB = heartBox(t), to = BB ? gripB(BB) : t < D3.liftB ? snailGrip : gripB(BIN.heart);
-      return craneArm({ m, handR: to, handMixR: 1, gripR: t < D3.inB ? 'grab' : 'open', frontR: true }, sh, [o1, o2], to, 1.25);
+      return craneArm({ m, handR: to, handMixR: 1, gripR: t < D3.inB ? 'grab' : 'open', frontR: true }, sh, to[1] > V[1] ? [o1, o2, V] : [o1, o2], to, 1.25);
     }
     const face = RIG.points(BX, BY, U, m).face, th = (m.rot || 0) + (m.lean || 0), bridge = add2(face, rot2([0, -1.26 * U], th));
     const cock = [bridge[0] + 10, bridge[1] - 92], chin = [face[0] + 10, face[1] + 70];
     let o;
     if (t < D3.swipe) {
-      const k = ease(seg(t, D3.inB + .03, D3.inB + .26)), R = routeAt([gripB(BIN.heart), [gripB(BIN.heart)[0] + 90, o2[1] - 10], o2, cock], k, [2]);
+      const k = ease(seg(t, D3.inB + .03, D3.inB + .26)), R = routeAt([gripB(BIN.heart), V, o2, cock], k, [1, 2]), ahead = [o2, V].filter(p => !R.vias.includes(p));
       const loose = ease(seg(k, .55, 1)), v1 = mix2(o1, mix2(sh, R.hand, .5), loose), hover = 10 * Math.sin(Math.PI * seg(t, D3.inB + .26, D3.swipe));
       const hand = [R.hand[0], R.hand[1] - hover];
-      o = craneArm({ m, handR: hand, handMixR: 1, gripR: t < SHADES.pop ? 'open' : 'grab', frontR: true }, sh, loose < .85 ? [v1, ...(R.vias.length ? [] : [o2])] : [], hand, 1.15);
+      o = craneArm({ m, handR: hand, handMixR: 1, gripR: t < SHADES.pop ? 'open' : 'grab', frontR: true }, sh, loose < .85 ? [v1, ...ahead] : [], hand, 1.15);
     } else if (t < D3.cool) {
       const to = mix2(cock, bridge, easeIn(seg(t, D3.swipe, D3.cool)));
       o = { handR: to, handMixR: 1, gripR: 'grab', frontR: true, lenR: lenFor(m, 'R', to, 1.1, .3) };
@@ -610,6 +678,7 @@
     }
     drawSnails(t, id => id !== 's1' && id !== 's2');
     d3Snails(t);
+    if (['s1', 's2'].some(id => Math.abs(snailAt(id, t).x - PORT.c[0]) < 95)) portholeRing();
     const BA = menuBox(t), BB = heartBox(t);
     if (BA) jsBox(BA.x, BA.y, 1, 'menu', { rot: BA.rot, squash: BA.squash, noShadow: true, key: 'queue menu' });
     if (BB) jsBox(BB.x, BB.y, 1, 'heart', { rot: BB.rot, squash: BB.squash, noShadow: true, key: 'queue heart' });
