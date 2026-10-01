@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Qwik mascot studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=block">
+<style>
+  html, body { margin: 0; background: #1b1820; color: #eee; font: 13px system-ui, sans-serif; }
+  main { padding: 12px; display: grid; gap: 8px; }
+  #out { width: min(100%, 1280px); aspect-ratio: 16 / 9; height: auto; background: #F3EBDC; }
+  .p5Canvas { display: none !important; }
+  .bar { display: flex; gap: 10px; align-items: center; max-width: 1280px; }
+  #scrub { flex: 1; }
+  #tt { font-variant-numeric: tabular-nums; min-width: 190px; }
+</style>
+<script src="node_modules/p5/lib/p5.min.js"></script>
+<script src="node_modules/p5.brush/dist/p5.brush.js"></script>
+</head>
+<body>
+<main>
+  <canvas id="out" width="1920" height="1080"></canvas>
+  <div class="bar"><input id="scrub" type="range" min="0" max="66" step="0.0417" value="0"><span id="tt">loading…</span></div>
+</main>
+<!-- engine -->
+<script src="src/config.js"></script>
+<script src="src/core.js"></script>
+<script src="src/clawd.js"></script>
+<script src="src/timeline.js"></script>
+<script src="src/bolt.js"></script>
+<script src="src/rig.js"></script>
+<!-- shared library -->
+<script src="src/lib/world.js"></script>
+<script src="src/lib/props.js"></script>
+<script src="src/lib/page.js"></script>
+<script src="src/lib/cast.js"></script>
+<script src="src/lib/sets.js"></script>
+<script src="src/lib/schedule.js"></script>
+<script src="src/lib/fx.js"></script>
+<!-- scenes -->
+
+
+<script src="src/scenes/network.js"></script>
+
+
+
+<script>
+  const q = new URLSearchParams(location.search).get('loop'); if (q && LOOPS[q]) window.LOOP = LOOPS[q];
+</script>
+</body>
+</html>

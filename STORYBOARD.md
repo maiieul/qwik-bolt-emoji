@@ -195,4 +195,5 @@ LIBRARY_SPEC.md.
 
 ## Sound (added last)
 
-A light, bouncy 120 BPM track, with painted-cartoon sound effects on the hits, from the cue list in `src/cues.js`.
+A light, bouncy 120 BPM track, with painted-cartoon sound effects on the hits, from the cue list in `audio/cues.json`.
+`node audio/make.mjs` writes `assets/soundtrack.wav`; `audio/README.md` explains how to retime cues.
