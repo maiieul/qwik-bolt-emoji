@@ -15,7 +15,7 @@ src/lib/cast.js                 snail, db, cursorHand
 src/lib/sets.js                 towerSet, landSet, houseSet (uses props, page, world)
 src/lib/schedule.js             the queue and every snail, as pure functions of t
 src/lib/fx.js                   captions overlay, title/end-card lettering, whip, paperOver
-src/scenes/bookends.js  server.js  network.js  browser.js  click.js  payoff.js
+src/scenes/intro.js  bookends.js  server.js  network.js  browser.js  click.js  payoff.js
 ```
 
 Each library file is an IIFE that publishes its API as globals (plain functions and one constant object per file, all
@@ -213,6 +213,7 @@ so the desk never fills up with snails.
 
 | file | shots | range |
 |---|---|---|
+| `intro.js` | I1–I5 | −10–0 |
 | `bookends.js` | A1, A2, G1, G2 | 0–6, 58.5–66 |
 | `server.js` | B1–B4, C2 | 6–15.5, 20.5–22.5 |
 | `network.js` | C0, D2, E5 | 15.5–17, 28–32, 44–48 |
@@ -224,6 +225,7 @@ Both owners of a seam strip-check it (`--strip` across the cut).
 
 | at | seam | handoff |
 |---|---|---|
+| 0.0 | I5 → A1 | the camera pushes into the blank page, which dissolves to paper (−0.58 → −0.25); from −0.25 the intro draws plain paper, the same pixels as A1 at 0.0 |
 | 6.0 | A2 → B1 | whip left: A2 draws `whip(0 → .5)` over 5.75–6.0, B1 draws `whip(.5 → 1)` over 6.0–6.25. Bolt leaves frame left at ~5.7 in A2 and enters from frame right in B1, skidding to `boltServer` by 6.5 |
 | 15.5 | B4 → C0 | cut on action: Bolt dives into the funnel stretched thin (sx ~.35, sy ~1.8); C0 opens outside the tower wall with Bolt sliding in the tube |
 | 17.0 | C0 → C1 | cut on action at the porthole |

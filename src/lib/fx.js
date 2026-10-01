@@ -1,6 +1,7 @@
 // fx.js: the step captions overlay, the title and end-card lettering, and the whip, paper-over and iris transitions.
 (() => {
   const CAPTIONS = [
+    { n: null, t0: -5.0, t1: -1.2, text: 'First visit, on a very slow network' },
     { n: 1, t0: 6.5, t1: 14.8, text: 'The server renders the page' },
     { n: 2, t0: 15.5, t1: 25.5, text: 'HTML arrives in pieces, slow parts last' },
     { n: 3, t0: 28.5, t1: 34.6, text: 'JavaScript streams in the background' },
@@ -59,11 +60,11 @@
   function caption(c, t) {
     const inK = seg(t, c.t0, c.t0 + .5), outK = seg(t, c.t1 - .42, c.t1);
     if (inK <= 0 || outK >= 1) return;
-    const { x, y, size, badgeR } = CAP, textX = x + badgeR + 24, xs = advances(c.text, size);
-    const left = x - badgeR - 18, right = textX + xs[xs.length - 1] + 34;
+    const { x, y, size, badgeR } = CAP, left = x - badgeR - 18, textX = c.n == null ? left + 34 : x + badgeR + 24, xs = advances(c.text, size);
+    const right = textX + xs[xs.length - 1] + 34;
     const head = lerp(left, right, easeOut(inK)), tail = lerp(left - 30, right + 30, easeIn(outK));
     swash(left, right, y + 2, size * 1.42, c.n, (tail - left) / (right - left), (head - left) / (right - left));
-    const b = backOut(seg(t, c.t0, c.t0 + .26)) * (1 - clamp((tail - (x - badgeR)) / (badgeR * 2)));
+    const b = c.n == null ? 0 : backOut(seg(t, c.t0, c.t0 + .26)) * (1 - clamp((tail - (x - badgeR)) / (badgeR * 2)));
     if (b > .02) {
       boilSeed('caption badge ' + c.n);
       paint(ellPts(x, y, badgeR * b, badgeR * b, 20, 1), { wash: FX.purple, ink: FX.ink, sw: 1.1 });

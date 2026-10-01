@@ -1030,7 +1030,7 @@
     seed('clock nail');
     paint(ellPts(x, y - 86, 4, 4, 8), { wash: K.brassDk, ink: PAL.ink, sw: SW(.5) });
     seed('wall clock');
-    sibling('wallClock', [x, y, 1, { whizz: o.clockWhizz || 0 }], () => placeholderClock(t, x, y, o.clockWhizz || 0));
+    sibling('wallClock', [x, y, 1, { whizz: o.clockWhizz || 0, time: o.clockTime }], () => placeholderClock(t, x, y, o.clockWhizz || 0));
   }
   function placeholderClock(t, x, y, whizz) {
     paint(ellPts(x, y, 62, 62, 30), { wash: K.trim, ink: PAL.ink, sw: SW(1.1) });
@@ -1086,6 +1086,29 @@
     paint(off(.8 * s, -.8 * s), { wash: QWIK.purple, ink: null });
     paint(P, { wash: QWIK.white, ink: PAL.ink, sw: SW(.45) });
   }
+  const ADDRESS = { text: 'boltplush.shop', pop: 1, caret: 0, focus: 0, icon: true };
+  const URL_Y = (Wd.page.titleBar[0] + Wd.page.titleBar[1]) / 2, URL_ICON = [Wd.window.x0 + 142, URL_Y + 1], URL_TEXT = [Wd.window.x0 + 164, URL_Y + .5];
+  const URL_PX = 15, urlFont = px => `600 ${px}px "Nunito", system-ui, sans-serif`;
+  let urlMeter = null;
+  function urlWidth(txt) {
+    if (!urlMeter) urlMeter = document.createElement('canvas').getContext('2d');
+    urlMeter.font = urlFont(100);
+    return urlMeter.measureText(txt).width * URL_PX / 100;
+  }
+  function addressText(x, y, A) {
+    const text = A.text || '', pop = clamp(A.pop), settled = pop < 1 ? text.slice(0, -1) : text, font = urlFont(URL_PX);
+    if (settled) letter(settled, x, y, URL_PX, PAL.ink, { font, align: 'left', ink: false });
+    if (pop < 1 && text) {
+      const x0 = x + urlWidth(settled), w = urlWidth(text) - urlWidth(settled);
+      letter(text.slice(-1), x0 + w / 2, y, URL_PX, PAL.ink, { font, align: 'center', ink: false, pop: .35 + .65 * pop });
+    }
+    flushLetters();
+    if (A.caret > .5) {
+      seed('url caret');
+      const cx = x + urlWidth(text) + 2;
+      inkLine([[cx, y - 8.5], [cx, y + 8.5]], SW(.75), PAL.ink, 'inkfine', 0);
+    }
+  }
   function browserFrame(t, o) {
     const B = Wd.window, pg = Wd.page;
     if (!vis(B.x0 - 20, B.y0 - 20, B.x1 + 20, Wd.desk.top)) return;
@@ -1099,11 +1122,16 @@
     paint([[B.x0 + 3, pg.titleBar[1]], [B.x0 + 3, B.y0 + 16], [B.x0 + 12, B.y0 + 5], [B.x0 + 24, B.y0 + 3], [B.x1 - 24, B.y0 + 3], [B.x1 - 12, B.y0 + 5], [B.x1 - 3, B.y0 + 16], [B.x1 - 3, pg.titleBar[1]]], { wash: K.frameBar, ink: null });
     const dy = (pg.titleBar[0] + pg.titleBar[1]) / 2;
     [PAL.rose, PAL.ochre, PAL.sap].forEach((c, i) => paint(ellPts(B.x0 + 28 + i * 24, dy, 7.5, 7.5, 12), { wash: c, ink: PAL.ink, sw: SW(.6) }));
+    const A = { ...ADDRESS, ...(o.address || {}) };
+    if (A.focus > .01) {
+      seed('url focus');
+      paint(rrPts(B.x0 + 116, dy - 15, 568, 30, 15), { wash: QWIK.blue, washOp: 255 * clamp(A.focus), ink: null });
+    }
     seed('url bar');
     paint(rrPts(B.x0 + 120, dy - 11, 560, 22, 11), { wash: K.url, ink: PAL.ink, sw: SW(.7) });
     if (FINE()) {
-      tinyBolt(B.x0 + 142, dy + 1, 1.05);
-      paint(rrPts(B.x0 + 164, dy - 3, 150, 6, 3), { wash: '#D8D0E4', ink: null });
+      if (A.icon) tinyBolt(...URL_ICON, 1.05);
+      addressText(...URL_TEXT, A);
     }
     seed('page');
     sibling('drawPage', [o.page || {}], () => placeholderPage());
@@ -1207,6 +1235,7 @@
   const SETS = {
     K, tubeAt, tubeS, tubeLen: PATH.len, path: PATH.P, shelfSlot: kind => SHELF_SLOTS[kind] ? SHELF_SLOTS[kind].slice() : null,
     nook: { x0: 4995, x1: 5175, y: ROAD }, horn: { mouth: [HORN.rim, 600], r: 104 },
+    address: { icon: URL_ICON, text: URL_TEXT, width: urlWidth }, portholeFront: () => portholeFront(),
     funnelFront: (t, o = {}) => horn(t, o.funnelGulp || 0), nozzleFront: (t, o = {}) => nozzle(t, o.nozzleBulge || 0),
   };
 

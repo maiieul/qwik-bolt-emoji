@@ -86,9 +86,9 @@ LIBRARY_SPEC.md.
 
 The shop is **boltplush.shop**, the page the rest of the film builds. Bolt is not here yet: it arrives with the HTML.
 
-- **I1 −10.0–−8.5 · A blank tab.** Close on the browser window at the desk: an empty lavender page, a blank tab, an
-  empty address bar with a blinking caret. The cursor hand glides in from the top right (−9.6) and clicks the address
-  bar (−9.0); the bar lights up.
+- **I1 −10.0–−8.5 · A blank tab.** The paper tears open on the browser window at the desk (−10.0–−9.6): an empty
+  lavender page, a blank tab, an empty address bar with a blinking caret; a snail dozes in the nook above the nozzle.
+  The cursor hand glides in from the top right (−9.6) and clicks the address bar (−9.0); the bar lights up.
   - reads: −10.0–−9.0 a blank browser tab · −9.0–−8.5 the user clicks the address bar
 - **I2 −8.5–−7.0 · Typing.** "boltplush.shop" types out letter by letter (−8.5–−7.6) while the finger taps fast;
   hold on the full address (−7.6–−7.0).
@@ -96,12 +96,12 @@ The shop is **boltplush.shop**, the page the rest of the film builds. Bolt is no
 - **I3 −7.0–−5.0 · Enter.** The finger presses (−7.0) with a small ↵ burst; the tab's icon becomes a spinner and a thin
   progress bar appears under the address bar. A rolled paper request slip pops out of the address bar and flutters onto
   the snail nook above the nozzle, where a sleepy snail wakes up with it on its shell, yawns and sets off left along
-  the top of the tube toward the porthole. The camera pulls back to show the window, the tube, the nook and the
-  porthole.
+  the top of the tube toward the porthole. The camera follows the slip (−6.5–−6.0), holds on the snail, then pulls back
+  to show the window, the tube, the nook and the porthole (−5.25–−4.5).
   - reads: −7.0–−6.3 Enter: the page starts loading · −6.3–−5.0 the request rides off on a snail
 - **I4 −5.0–−2.0 · The wait.** The snail crawls, painfully slow; the progress bar inches along; the hand drums its
-  fingers on the window frame; the page stays blank. Caption at −5.0. At −3.0 the wall clock's hands whizz (time
-  passes) and the snail is suddenly at the porthole; it squeezes through and is gone (−2.5–−2.0).
+  fingers on the page by the window's edge; the page stays blank. Caption at −5.0. At −3.0 the wall clock's hands
+  whizz (time passes) and the snail is suddenly at the porthole (−2.6); it squeezes through and is gone (−2.6–−2.15).
   - reads: −5.0–−3.0 everything is very slow · −3.0–−2.0 the request finally leaves the house
 - **I5 −2.0–0.0 · Into the title.** The hand drifts off; the camera pushes into the blank page until it fills the
   frame and turns to paper (pure paper by −0.25), where A1's logo paint-on begins at 0.0.
