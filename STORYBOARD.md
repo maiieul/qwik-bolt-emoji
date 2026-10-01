@@ -6,7 +6,8 @@ code that's already here runs at once. A click on code that isn't here yet: Bolt
 shoots all the way back down the line, and that code leaves first. The click goes through, and the rest keeps
 streaming.
 
-**Length.** 66 s, 1920×1080, 24 fps, 120 BPM (beat 0.5 s, bar 2 s, offset 0). Hits land on beats.
+**Length.** 76 s: a 10 s intro at story times −10 → 0, then the 66 s film at 0 → 66. 1920×1080, 24 fps, 120 BPM (beat
+0.5 s, bar 2 s, offset 0). Hits land on beats. All times in this file are story times; video time = story time + 10.
 
 **Audience.** Web developers who may not know Qwik, watching once, maybe with the sound off.
 
@@ -17,6 +18,8 @@ The world layout, props and every shared API are in [LIBRARY_SPEC.md](LIBRARY_SP
 
 | picture | the real thing |
 |---|---|
+| a blank new tab; the user types boltplush.shop and presses Enter | a first visit: the browser has nothing yet |
+| the request slip riding off on a sleepy snail; a spinner and a progress bar that barely moves | the HTTP request over a very slow network |
 | Bolt working in a workshop inside a server tower | server-side rendering (SSR) |
 | a paper slip from a small brass pipe, with a thumbnail of the page | the HTTP request |
 | page parts (header, hero, product card, reviews, footer) snapped onto a page-shaped board | components rendered to HTML |
@@ -65,6 +68,7 @@ on props (`HTML`, `JS`), the badge digit and the review stars are the only other
 
 | when | text |
 |---|---|
+| −5.0 → −1.2 | First visit, on a very slow network |
 | 3.0 / 3.5 → 5.3 | small "Qwik", then **JavaScript Streaming** |
 | 6.5 → 14.8 | 1 · The server renders the page |
 | 15.5 → 25.5 | 2 · HTML arrives in pieces, slow parts last |
@@ -77,6 +81,31 @@ on props (`HTML`, `JS`), the badge digit and the review stars are the only other
 
 Times are video seconds. Reads are what the viewer must understand, in order. Seams between scene files are listed in
 LIBRARY_SPEC.md.
+
+### 0 · Intro: a first visit on a very slow network (−10.0–0.0) · the house · `intro.js`
+
+The shop is **boltplush.shop**, the page the rest of the film builds. Bolt is not here yet: it arrives with the HTML.
+
+- **I1 −10.0–−8.5 · A blank tab.** Close on the browser window at the desk: an empty lavender page, a blank tab, an
+  empty address bar with a blinking caret. The cursor hand glides in from the top right (−9.6) and clicks the address
+  bar (−9.0); the bar lights up.
+  - reads: −10.0–−9.0 a blank browser tab · −9.0–−8.5 the user clicks the address bar
+- **I2 −8.5–−7.0 · Typing.** "boltplush.shop" types out letter by letter (−8.5–−7.6) while the finger taps fast;
+  hold on the full address (−7.6–−7.0).
+  - reads: −8.5–−7.0 the user types boltplush.shop
+- **I3 −7.0–−5.0 · Enter.** The finger presses (−7.0) with a small ↵ burst; the tab's icon becomes a spinner and a thin
+  progress bar appears under the address bar. A rolled paper request slip pops out of the address bar and flutters onto
+  the snail nook above the nozzle, where a sleepy snail wakes up with it on its shell, yawns and sets off left along
+  the top of the tube toward the porthole. The camera pulls back to show the window, the tube, the nook and the
+  porthole.
+  - reads: −7.0–−6.3 Enter: the page starts loading · −6.3–−5.0 the request rides off on a snail
+- **I4 −5.0–−2.0 · The wait.** The snail crawls, painfully slow; the progress bar inches along; the hand drums its
+  fingers on the window frame; the page stays blank. Caption at −5.0. At −3.0 the wall clock's hands whizz (time
+  passes) and the snail is suddenly at the porthole; it squeezes through and is gone (−2.5–−2.0).
+  - reads: −5.0–−3.0 everything is very slow · −3.0–−2.0 the request finally leaves the house
+- **I5 −2.0–0.0 · Into the title.** The hand drifts off; the camera pushes into the blank page until it fills the
+  frame and turns to paper (pure paper by −0.25), where A1's logo paint-on begins at 0.0.
+  - reads: −2.0–−0.5 still nothing on screen · −0.5–0.0 into the title
 
 ### A · Title (0.0–6.0) · paper void · `bookends.js`
 
