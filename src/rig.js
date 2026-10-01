@@ -443,7 +443,8 @@
     return { ...cur, ...arms };
   }
 
-  window.RIG_A = { qwik, points, stroll, feel, emotions, armsFor, K, GRIPS, GAIT, stride: (u, run) => (run ? GAIT.run : GAIT.walk).stride * u };
+  window.RIG = { qwik, points, stroll, feel, emotions, armsFor, K, GRIPS, GAIT, stride: (u, run) => (run ? GAIT.run : GAIT.walk).stride * u };
+  window.qwik = qwik;
 
   const floor = (y, x0, x1) => {
     boilSeed('floor ' + y + ' ' + x0);

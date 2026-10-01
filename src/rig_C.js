@@ -1,83 +1,134 @@
 (() => {
   const COL = {
-    limb: '#6244CC', glove: '#29B3F2', gloveDk: '#1A7FC0', cuff: '#E9F8FF', shoe: '#FFD447', sole: '#E4952B', box: '#FFD447', boxDk: '#E4952B',
+    limb: '#5B3CC6', limbHi: '#8D73F0',
+    glove: '#2BB4F4', gloveDk: '#1B80C2',
+    cuff: '#FFFBF4',
+    shoe: '#FFD447', shoeDk: '#E8962E',
+    box: '#FFD447', boxHi: '#FFF1B8',
   };
-  const TIP_H = 6.7, TIP_X = 2.1, SLACK = 1.3;
-  const SHOULDER = [[-6.85, -6.75], [-.8, -6.55]];
-  const HIP = [[-2.25, -2.75], [-.85, -2.35]];
-  const ARM_LEN = 8, FOOT_X = 2.7, ANKLE_H = .85, HAND = 1.15, FOOT = 1.08;
-  const ARM_W = [1.45, .82], LEG_W = [1.6, .95];
+  const TIP_H = 6.7, TIP_X = 2.1, SLACK = 1.3, HOVER = 1.4;
+  const SHOULDER = [[-6.85, -6.75], [-.8, -6.55]], SHOULDER_LOW = [[-5.1, -4.95], [-.5, -4.55]];
+  const HIP = [[-1.3, -1.6], [-.55, -1.5]];
+  const ARM_LEN = 7.4, REST_A = -1.1, FOOT_X = 2.4, LEG_BOW = 1.04;
+  const ANKLE_H = .85, HAND = 1.2, FOOT = 1.18;
+  const ARM_W = [1.56, .82], LEG_W = [1.78, 1.0];
+  const KINK_GAP = 5.5, SAG_MAX = 5, LIGHT = [.6, -.8];
   const GAIT = {
-    walk: { duty: .56, travel: 11, lift: 1.9, bob: .5, rock: .05, arm: .32 },
-    run: { duty: .34, travel: 17, lift: 3.4, bob: 1.1, rock: .06, arm: .55, peak: .6 },
+    walk: { duty: .56, travel: 11, lift: 1.9, bob: .5, rock: .05, base: -1.02, arm: .34, lag: .07, bend0: -.2, bendAmp: .42 },
+    run: { duty: .34, travel: 17, lift: 3.4, bob: 1.1, rock: .06, base: -.62, arm: .5, lag: .09, bend0: .55, bendAmp: .45, peak: .6 },
   };
 
-  const LEG_REST = [0, 1].map(s => {
+  const legRest = s => {
     const hx = TIP_X + HIP[s][0], hy = -(TIP_H - HIP[s][1]), fx = (s ? 1 : -1) * FOOT_X, fy = -ANKLE_H;
-    return Math.hypot(fx - hx, fy - hy) * 1.14;
-  });
+    return Math.hypot(fx - hx, fy - hy) * LEG_BOW;
+  };
 
   function bodyMap(bx, by, u, o, sq, rot) {
     const c = Math.cos(rot), s = Math.sin(rot), turn = o.turnX ?? 1;
     const fx = (o.flip ? -1 : 1) * (o.sx ?? 1) * (1 + sq * .6), fy = (o.sy ?? 1) * (1 - sq);
-    return (px, py) => {
+    const map = (px, py) => {
       if (turn !== 1) px = BODY_CX + (px - BODY_CX) * turn;
       const qx = px * u * fx, qy = py * u * fy;
       return [bx + qx * c - qy * s, by + qx * s + qy * c];
     };
+    map.inv = (wx, wy) => {
+      const dx = wx - bx, dy = wy - by, px = (dx * c + dy * s) / (u * fx), py = (-dx * s + dy * c) / (u * fy);
+      return [turn !== 1 ? BODY_CX + (px - BODY_CX) / turn : px, py];
+    };
+    return map;
   }
 
-  function step(ph, G) {
-    const q = frac(ph), S = G.travel * G.duty;
-    if (q < G.duty) return { off: S / 2 - S * q / G.duty, lift: 0, tilt: 0 };
-    const k = (q - G.duty) / (1 - G.duty);
-    return { off: -S / 2 + G.travel * (ease(k) - (1 - G.duty) * k), lift: G.lift * Math.sin(Math.PI * Math.pow(k, G.peak ?? .8)), tilt: .5 * Math.sin(TAU * k) };
+  function step(ph, gait) {
+    const q = frac(ph), S = gait.travel * gait.duty;
+    if (q < gait.duty) return { off: S / 2 - S * q / gait.duty, lift: 0, tilt: 0 };
+    const k = (q - gait.duty) / (1 - gait.duty);
+    return { off: -S / 2 + gait.travel * (ease(k) - (1 - gait.duty) * k), lift: gait.lift * Math.sin(Math.PI * Math.pow(k, gait.peak ?? .8)), tilt: .5 * Math.sin(TAU * k) };
   }
 
+  const rot2 = ([x, y], a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+  const norm = ([x, y]) => { const d = Math.hypot(x, y) || 1; return [x / d, y / d]; };
   const quad = (A, C, B, s) => { const m = 1 - s; return [m * m * A[0] + 2 * m * s * C[0] + s * s * B[0], m * m * A[1] + 2 * m * s * C[1] + s * s * B[1]]; };
-  const quadNormal = (A, C, B, s) => {
-    const m = 1 - s, dx = m * (C[0] - A[0]) + s * (B[0] - C[0]), dy = m * (C[1] - A[1]) + s * (B[1] - C[1]), d = Math.hypot(dx, dy) || 1;
-    return [-dy / d, dx / d];
-  };
-  const quadLen = (A, C, B) => {
-    let L = 0, p = A;
-    for (let i = 1; i <= 10; i++) { const q = quad(A, C, B, i / 10); L += Math.hypot(q[0] - p[0], q[1] - p[1]); p = q; }
-    return L;
-  };
+  const quadPath = (A, C, B) => Array.from({ length: 33 }, (_, i) => quad(A, C, B, i / 32));
+  const cubicPath = (A, C, D, B) => Array.from({ length: 41 }, (_, i) => { const t = i / 40, m = 1 - t; return [0, 1].map(k => m * m * m * A[k] + 3 * m * m * t * C[k] + 3 * m * t * t * D[k] + t * t * t * B[k]); });
+  const pathLen = P => { let L = 0; for (let i = 1; i < P.length; i++) L += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]); return L; };
+  const endAngle = P => { const p = P[P.length - 2], q = P[P.length - 1]; return Math.atan2(q[1] - p[1], q[0] - p[0]); };
+  const tangentAt = (P, i) => norm([P[Math.min(P.length - 1, i + 1)][0] - P[Math.max(0, i - 1)][0], P[Math.min(P.length - 1, i + 1)][1] - P[Math.max(0, i - 1)][1]]);
+  const zigzag = x => Math.asin(.992 * Math.sin(Math.PI * x)) / Math.asin(.992);
 
-  function limbPts(A, C, B, zig, kinks) {
-    if (zig < .5) return [0, .16, .33, .5, .67, .84, 1].map(s => quad(A, C, B, s));
-    const knots = [[0, 0], [.08, 0]];
-    for (let j = 0; j < kinks; j++) knots.push([.08 + .84 * (j + .5) / kinks, j % 2 ? -1 : 1]);
-    knots.push([.92, 0], [1, 0]);
-    const pts = [];
-    for (let i = 0; i < knots.length - 1; i++) {
-      const [s0, o0] = knots[i], [s1, o1] = knots[i + 1];
-      for (const f of [0, .16, .84]) {
-        const s = lerp(s0, s1, f), off = lerp(o0, o1, f) * zig, p = quad(A, C, B, s), n = quadNormal(A, C, B, s);
-        pts.push([p[0] + n[0] * off, p[1] + n[1] * off]);
-      }
+  function resamplePath(P, n) {
+    const cum = [0];
+    for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+    const total = cum[cum.length - 1], out = [];
+    for (let k = 0, j = 0; k <= n; k++) {
+      const at = total * k / n;
+      while (j < P.length - 2 && cum[j + 1] < at) j++;
+      const f = clamp((at - cum[j]) / ((cum[j + 1] - cum[j]) || 1));
+      out.push([lerp(P[j][0], P[j + 1][0], f), lerp(P[j][1], P[j + 1][1], f)]);
     }
-    pts.push(B);
-    return pts;
+    return out;
   }
 
-  const textured = u => u * (CAM ? CAM.zoom : 1) >= 15;
+  const zoomOf = () => CAM ? CAM.zoom : 1;
+  const textured = u => u * zoomOf() >= 15;
   const tex = (u, fill, op) => textured(u) ? { fill, fillOp: op, bleed: .03, tex: .5, border: .5 } : {};
+  const kinkAmp = r => clamp((r - 1.6) / 1.6) * (1.1 + .14 * Math.sqrt(Math.max(0, r - 3)));
+  const kinkGap = r => KINK_GAP * (1 + .06 * Math.max(0, r - 4));
 
-  function limb(A, C, B, rest, w0, w1, col, u, sw, kinks) {
-    const arc = quadLen(A, C, B), r = arc / rest, thin = r > 1 ? Math.pow(r, -.4) : 1;
-    const zig = clamp((r - 1.7) / 1.5) * 1.05 * u;
-    const pts = limbPts(A, C, B, zig, kinks);
-    paint(ribbon(pts, Math.max(.7 * u, w0 * thin), Math.max(.56 * u, w1 * thin)), { wash: col, ...tex(u, mixCol(col, PAL.ink, .4), 50), ink: PAL.ink, sw: sw * .85 });
-    if (zig > .6 * u) {
-      for (let j = 0; j < kinks; j++) {
-        if (random() > .4) continue;
-        const s = .08 + .84 * (j + .5) / kinks, p = quad(A, C, B, s), n = quadNormal(A, C, B, s), side = j % 2 ? -1 : 1;
-        spark(p[0] + n[0] * side * (zig + .9 * u), p[1] + n[1] * side * (zig + .9 * u), u * (1.05 + .35 * random()), Math.atan2(n[1], n[0]) * side + jit(.4), sw);
+  function limbHighlight(Z, n, width) {
+    let lean = 0;
+    for (let i = 0; i <= n; i += 3) { const t = tangentAt(Z, i); lean += -t[1] * LIGHT[0] + t[0] * LIGHT[1]; }
+    const side = lean >= 0 ? 1 : -1, i0 = Math.round(n * .16), i1 = Math.round(n * .8), A = [], B = [];
+    for (let i = i0; i <= i1; i++) {
+      const t = tangentAt(Z, i), w = width(i) / 2, k = Math.pow(Math.max(0, Math.sin(Math.PI * (i - i0) / (i1 - i0))), .7);
+      const inner = side * w * .3, outer = side * w * (.3 + .32 * k);
+      A.push([Z[i][0] - t[1] * outer, Z[i][1] + t[0] * outer]); B.push([Z[i][0] - t[1] * inner, Z[i][1] + t[0] * inner]);
+    }
+    paint(A.concat(B.reverse()), { wash: COL.limbHi, washOp: 215, ink: null });
+  }
+
+  function drawLimb(base, rest, w0, w1, col, u, sw, seed = 0) {
+    const total = pathLen(base);
+    if (total < .05 * u || w0 < .05 * u) return;
+    const r = total / rest, amp = kinkAmp(r) * u, gap = kinkGap(r) * u;
+    const n = Math.ceil(clamp(total / (.25 * u), 24, amp > 0 ? Math.max(240, total / gap * 12) : 240)), wob = [jit(.05 * u), jit(.05 * u)];
+    const C = resamplePath(base, n).map((p, i) => { const k = Math.sin(Math.PI * i / n); return [p[0] + wob[0] * k, p[1] + wob[1] * k]; });
+    const knot = j => (j + .32 * (hash(j * 7.3 + seed) - .5)) * gap;
+    const Z = amp < .02 * u ? C : C.map((p, i) => {
+      const s = total * i / n;
+      let j = Math.floor(s / gap);
+      if (s < knot(j)) j--; else if (s >= knot(j + 1)) j++;
+      const ph = j + (s - knot(j)) / (knot(j + 1) - knot(j));
+      const off = amp * (.8 + .4 * hash(j * 3.1 + seed + 5)) * zigzag(ph) * ease(s / (1.3 * u)) * ease((total - s) / (1.7 * u)), t = tangentAt(C, i);
+      return [p[0] - t[1] * off, p[1] + t[0] * off];
+    });
+    const thin = r > 1 ? Math.pow(r, -.4) : 1, z = zoomOf();
+    const a = Math.max(Math.min(w0, Math.max(.7 * u, 11 / z)), w0 * thin), b = Math.max(Math.min(w1, Math.max(.56 * u, 8 / z)), w1 * thin);
+    const width = i => lerp(a, b, Math.pow(i / n, .85));
+    const Ls = [], Rs = [];
+    Z.forEach((p, i) => { const t = tangentAt(Z, i), w = width(i) / 2; Ls.push([p[0] - t[1] * w, p[1] + t[0] * w]); Rs.push([p[0] + t[1] * w, p[1] - t[0] * w]); });
+
+    const poly = Ls.concat(Rs.slice().reverse()), xs = poly.map(q => q[0]), ys = poly.map(q => q[1]);
+    const extent = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) * z;
+    if (extent < 1400) paint(poly, { wash: col, ...tex(u, mixCol(col, PAL.ink, .4), 50), ink: PAL.ink, sw: sw * .85 });
+    else {
+      const per = 24;
+      for (let i = 0; i < n; i += per) { const j = Math.min(n, i + per + 1); paint(Ls.slice(i, j + 1).concat(Rs.slice(i, j + 1).reverse()), { wash: col, ink: null }); }
+      for (const side of [Ls, Rs]) for (let i = 0; i < n; i += per) inkLine(side.slice(i, Math.min(n, i + per) + 1), sw * .85, PAL.ink, 'inkflat', .3);
+      inkLine([Ls[0], Z[0], Rs[0]], sw * .85, PAL.ink, 'inkflat', .5);
+      inkLine([Ls[n], Z[n], Rs[n]], sw * .85, PAL.ink, 'inkflat', .5);
+    }
+    if (textured(u) && extent < 1400 && amp < .3 * u) limbHighlight(Z, n, width);
+
+    if (amp > .6 * u) {
+      const corners = Math.max(1, Math.floor(total / gap - .5) + 1), chance = Math.min(.4, 5 / corners);
+      for (let j = 0; j < corners; j++) {
+        const s = (knot(j) + knot(j + 1)) / 2;
+        if (s > total - 1.6 * u) break;
+        if (random() > chance) continue;
+        const i = Math.round(s / total * n), t = tangentAt(C, i), side = j % 2 ? -1 : 1, d = amp + .9 * u;
+        spark(C[i][0] - t[1] * side * d, C[i][1] + t[0] * side * d, u * (1.05 + .35 * random()), Math.atan2(t[0] * side, -t[1] * side) + jit(.4), sw);
       }
     }
-    return { r, zig };
   }
 
   function fanHand(cx, rx, ry, digits, n = 96) {
@@ -130,247 +181,341 @@
       hold: [2.4, .2],
     },
   };
-  const CUFF = [[-.1, -.62], [.2, -.72], [.62, -.86], [.72, -.3], [.72, .3], [.62, .86], [.2, .72], [-.1, .62]];
+  const CUFF = [[.66, -.64], [.66, .64], [.1, .86], [-.3, .98], [-.36, .5], [-.38, 0], [-.36, -.5], [-.3, -.98], [.1, -.86]];
+  const CUFF_ZAP = [[.3, -.62], [.08, -.22], [.32, .1], [.1, .5]];
 
   function glove(grip, u, sw, hook, upright) {
-    const G = GRIPS[grip] || GRIPS.open, k = u * HAND, P = pts => pts.map(([a, b]) => [a * k + jit(.03 * u), b * k + jit(.03 * u)]);
-    paint(P(G.back), { wash: COL.glove, ...tex(u, COL.gloveDk, 45), ink: PAL.ink, sw: sw * .8, curv: G.curv ?? .45 });
-    if (!G.front) G.lines.forEach(l => inkLine(P(l), sw * .45, PAL.ink, 'inkfine', .5));
-    if (hook) { push(); translate(G.hold[0] * k, G.hold[1] * k); hook(u, sw, upright); pop(); }
-    if (G.front) {
-      paint(P(G.front), { wash: COL.glove, ...tex(u, COL.gloveDk, 45), ink: PAL.ink, sw: sw * .8, curv: .45 });
-      G.lines.forEach(l => inkLine(P(l), sw * .45, PAL.ink, 'inkfine', .5));
+    const shape = GRIPS[grip] || GRIPS.open, k = u * HAND, P = pts => pts.map(([a, b]) => [a * k + jit(.03 * u), b * k + jit(.03 * u)]);
+    paint(P(shape.back), { wash: COL.glove, ...tex(u, COL.gloveDk, 45), ink: PAL.ink, sw: sw * .8, curv: shape.curv ?? .45 });
+    if (!shape.front) shape.lines.forEach(l => inkLine(P(l), sw * .45, PAL.ink, 'inkfine', .5));
+    if (hook) { push(); translate(shape.hold[0] * k, shape.hold[1] * k); hook(u, sw, upright); pop(); }
+    if (shape.front) {
+      paint(P(shape.front), { wash: COL.glove, ...tex(u, COL.gloveDk, 45), ink: PAL.ink, sw: sw * .8, curv: .45 });
+      shape.lines.forEach(l => inkLine(P(l), sw * .45, PAL.ink, 'inkfine', .5));
     }
     paint(P(CUFF), { wash: COL.cuff, ink: PAL.ink, sw: sw * .7, curv: .3 });
+    if (textured(u)) inkLine(P(CUFF_ZAP), sw * .4, mixCol(COL.cuff, PAL.ink, .45), 'inkfine', 0);
   }
 
-  const SHOE = [[-.85, -.06], [-1.3, -.42], [-.95, -.72], [-.6, -1.08], [.3, -1.1], [.75, -.82], [1.55, -.66], [2.3, -.66], [2.95, -1.08], [2.9, -.55], [2.45, -.1], [1.95, 0], [-.5, 0]];
-  const SOLE = [[-1.2, -.36], [-.55, -.36], [-.2, -.56], [.2, -.34], [.75, -.34], [1.1, -.56], [1.5, -.32], [2.72, -.32], [2.45, -.1], [1.95, 0], [-.5, 0], [-.85, -.06]];
+  function sparkShoe(back, heel, spike, collar, toe, front, dip) {
+    const c = [.55, -.62], arc = (A, B, k, n = 6) => { const M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], Q = [lerp(M[0], c[0], k), lerp(M[1], c[1], k)]; return Array.from({ length: n }, (_, i) => quad(A, Q, B, i / n)); };
+    return [...arc(back, heel, dip[0]), ...arc(heel, spike, dip[1]), ...arc(spike, collar, dip[2]), ...arc(collar, toe, dip[3]), ...arc(toe, front, dip[4]), ...arc(front, back, 0, 4)];
+  }
+  function zigzagSole(P, h, tooth = .78, peak = .22) {
+    const below = q => q[1] > -h, n = P.length, start = P.findIndex(q => !below(q)), Q = [];
+    for (let k = 0; k < n; k++) Q.push(P[(start + k) % n]);
+    const cross = (a, b) => [lerp(a[0], b[0], (-h - a[1]) / (b[1] - a[1])), -h];
+    const run = [];
+    for (let k = 0; k < n; k++) {
+      const a = Q[k], b = Q[(k + 1) % n];
+      if (below(a) !== below(b)) run.push(cross(a, b));
+      if (below(b)) run.push(b);
+    }
+    if (run.length < 3) return [];
+    const from = run[run.length - 1], to = run[0], teeth = Math.max(1, Math.round(Math.abs(to[0] - from[0]) / tooth)), zig = [];
+    for (let k = 1; k < 2 * teeth; k++) zig.push([lerp(from[0], to[0], k / (2 * teeth)), -h - (k % 2 ? peak : 0)]);
+    return [...run, ...zig];
+  }
+  const SHOE = sparkShoe([-.85, 0], [-1.45, -.5], [-1.3, -2.25], [.45, -1.25], [3.2, -1.35], [2.25, 0], [.25, .62, .2, .45, .35]);
+  const SOLE = zigzagSole(SHOE, .32), SHOE_ZAP = [[.9, -.62], [1.45, -.86], [1.55, -.6], [2.15, -.82]];
 
-  function shoe(u, sw, col) {
+  function shoe(u, sw) {
     const k = u * FOOT, P = pts => pts.map(([a, b]) => [a * k + jit(.03 * u), b * k + jit(.03 * u)]);
-    paint(P(SHOE), { wash: col, ...tex(u, COL.sole, 40), ink: null, curv: .35 });
-    paint(P(SOLE), { wash: COL.sole, ink: null, curv: .05 });
-    paint(P(SHOE), { ink: PAL.ink, sw: sw * .8, curv: .35 });
+    paint(P(SHOE), { wash: COL.shoe, ...tex(u, COL.shoeDk, 40), ink: null, curv: .25 });
+    paint(P(SOLE), { wash: COL.shoeDk, ink: null });
+    paint(P(SHOE), { ink: PAL.ink, sw: sw * .8, curv: .25 });
+    if (textured(u)) inkLine(P(SHOE_ZAP), sw * .55, COL.shoeDk, 'ink', 0);
   }
 
-  const rot2 = ([x, y], a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
-  const norm = ([x, y]) => { const d = Math.hypot(x, y) || 1; return [x / d, y / d]; };
   const restBend = a => .3 * Math.tanh(2 * (a + .7));
 
   function walkArms(p, run) {
-    const G = run ? GAIT.run : GAIT.walk, swing = Math.sin(TAU * (p - .25)), lag = Math.cos(TAU * (p - .25));
-    if (run) return { aL: -.75 + G.arm * swing, aR: -.7 - G.arm * swing, bendL: .75 - .3 * lag, bendR: .75 + .3 * lag };
-    return { aL: -1.08 + G.arm * swing, aR: -.98 - G.arm * swing, bendL: -.25 - .35 * lag, bendR: -.25 + .35 * lag };
+    const g = run ? GAIT.run : GAIT.walk, ph = TAU * (p - g.lag), up = Math.cos(ph), vel = -Math.sin(ph);
+    return { aL: g.base - .04 - g.arm * up, aR: g.base + g.arm * up, bendL: g.bend0 + g.bendAmp * vel, bendR: g.bend0 - g.bendAmp * vel };
+  }
+
+  function drawBody(x, y, u, o) {
+    if (!o.noFace) return bolt(x, y, u, o);
+    const eyesFlat = eyes;
+    eyes = () => {};
+    try { bolt(x, y, u, { ...o, mouth: null, blush: 0, gloom: 0, brows: null, shades: null, mustache: false, hands: null, thumbs: null, lasers: 0, sob: null, emote: null }); }
+    finally { eyes = eyesFlat; }
   }
 
   function qwik(x, y, u, o = {}) {
     const id = o.boilKey ?? ++CLAWD_N, rs = part => boilSeed(`rigC ${id} ${part}`);
-    const flip = o.flip ? -1 : 1, heading = o.dir ?? flip, sq = (o.sq || 0) + (o.take || 0), sw = clamp(u / 15, .45, 2.4);
-    const walking = o.walk != null, gk = walking ? clamp(o.stride ?? 1) : 0, G = o.run ? GAIT.run : GAIT.walk, p = walking ? o.walk : 0;
-    const spread = o.legSpread ?? 1;
+    const flip = o.flip ? -1 : 1, heading = o.dir ?? flip, sq = (o.sq || 0) + (o.take || 0), sw = clamp(u / 15, .45, 2.4) * (o.swMul || 1);
+    const walking = o.walk != null, stride = walking ? clamp(o.stride ?? 1) : 0, gait = o.run ? GAIT.run : GAIT.walk, p = walking ? o.walk : 0;
+    const spread = o.legSpread ?? 1, legLen = Math.max(0, o.legLen ?? 1), grown = Math.min(1, legLen);
 
-    const steps = [step(p, G), step(p + .5, G)];
-    const bob = gk * G.bob * -Math.cos(4 * Math.PI * (p - .08));
-    const lift = -(o.dy || 0) + bob, over = lift - SLACK, air = over > 0 ? lift - SLACK * Math.exp(-over / .8) + .9 * (1 - Math.exp(-over / .6)) : 0;
-    const tipH = TIP_H * (1 - sq * .8) + lift;
-    const lean = (o.lean || 0) + (o.rot || 0) + gk * heading * ((o.run ? .16 : .07) + G.rock * Math.sin(TAU * (p - .1)));
-    const bx = x + (TIP_X * flip + (o.dx || 0)) * u, by = y - tipH * u;
-    const X = bodyMap(bx, by, u, o, sq, lean);
-    const local = s => flip > 0 ? s : 1 - s;
+    const steps = [step(p, gait), step(p + .5, gait)];
+    const bob = stride * gait.bob * -Math.cos(4 * Math.PI * (p - .08));
+    const slack = SLACK + 2 * stride, lift = -(o.dy || 0) + bob, over = lift - slack, air = over > 0 ? lift - slack * Math.exp(-over / .8) + .9 * (1 - Math.exp(-over / .6)) : 0;
+    const tipH = lerp(HOVER, TIP_H, legLen) * (1 - sq * .8) + lift;
+    const lean = (o.lean || 0) + (o.rot || 0) + stride * heading * ((o.run ? .16 : .07) + gait.rock * Math.sin(TAU * (p - .1)));
+    const bx = x + (lerp(-BODY_CX, TIP_X, grown) * flip + (o.dx || 0)) * u, by = y - tipH * u;
+    const toWorld = bodyMap(bx, by, u, o, sq, lean);
+    const local = s => flip > 0 ? s : 1 - s, near = o.legFront ? (o.legFront === 'L' ? 0 : 1) : heading > 0 ? 1 : 0;
 
-    const feet = [0, 1].map(s => {
-      const sd = s ? 1 : -1, st = steps[s];
-      const fx = x + (sd * FOOT_X * spread * lerp(1, .38, gk) + gk * st.off * heading) * u;
-      const fy = y - (air + gk * st.lift) * u;
-      const dir = lerp(sd, heading, gk);
-      return { at: [fx, fy], dir: Math.sign(dir || 1) * Math.max(.4, Math.abs(dir)), tilt: gk * st.tilt * heading, sd };
+    const legs = [0, 1].map(s => {
+      const sd = s ? 1 : -1, side = s ? 'R' : 'L', st = steps[s], hip = HIP[local(s)], mid = (HIP[0][0] + HIP[1][0]) / 2;
+      const H = toWorld(lerp(hip[0], mid, .8 * stride), hip[1]), shift = o['step' + side] || [0, 0];
+      const ground = [x + (sd * FOOT_X * spread * (1 - stride) + stride * st.off * heading + shift[0]) * u, y - (air + stride * st.lift - shift[1]) * u];
+      const at = [lerp(H[0], ground[0], grown), lerp(H[1] + ANKLE_H * u, ground[1], grown)];
+      const dir = lerp(sd, heading, stride), fdir = Math.sign(dir || 1), toe = clamp(o['toe' + side] || 0) * .5 * grown;
+      let K = [at[0], at[1] - ANKLE_H * u];
+      if (toe > 0) { const heel = [at[0] - .85 * FOOT * u * fdir, at[1]], v = rot2([K[0] - heel[0], K[1] - heel[1]], -toe * fdir); K = [heel[0] + v[0], heel[1] + v[1]]; }
+      const cx = K[0] - H[0], cy = K[1] - H[1], c = Math.hypot(cx, cy) || 1e-3, L0 = legRest(local(s)) * u * Math.max(legLen, .01);
+      const perp = [-cy / c, cx / c], toward = perp[0] * lerp(sd, heading, stride);
+      const sag = Math.max(.45 * u * grown, c < L0 ? Math.sqrt(3 * c * (L0 - c) / 8) : 0);
+      const C = [(H[0] + K[0]) / 2 + perp[0] * 2 * sag * toward, (H[1] + K[1]) / 2 + perp[1] * 2 * sag * toward];
+      return { s, H, K, C, L0, at, foot: fdir * Math.max(.4, Math.abs(dir)), tilt: stride * st.tilt * heading - toe * fdir, size: clamp(legLen / .3) };
     });
 
+    window.__dbgC = legs;
     rs('shadow');
     if (!o.noShadow) {
-      const cx = (feet[0].at[0] + feet[1].at[0]) / 2, w = Math.abs(feet[1].at[0] - feet[0].at[0]) / 2 + 2.6 * u, k = 1 - Math.min(.5, air * .12);
-      paint(ellPts(cx, y + .1 * u, w * k, .8 * u * k, 22), { fill: PAL.ink, fillOp: 70, bleed: .25, tex: .3, border: .1, ink: null });
+      const span = Math.abs(legs[1].at[0] - legs[0].at[0]) / 2 + 2.6 * u, k = 1 - Math.min(.5, (air + (1 - grown) * HOVER) * .12);
+      const cx = lerp(x + (o.dx || 0) * u, (legs[0].at[0] + legs[1].at[0]) / 2, grown);
+      paint(ellPts(cx, y + .1 * u, lerp(4.6 * u, span, grown) * k, .8 * u * k, 22), { fill: PAL.ink, fillOp: 70, bleed: .25, tex: .3, border: .1, ink: null });
     }
 
     const arms = [0, 1].map(s => {
-      const K = s ? 'R' : 'L', sd = s ? 1 : -1, S = X(...SHOULDER[local(s)]);
-      const at = o['handAt' + K], target = at ? X(...at) : o['hand' + K], rest = ARM_LEN * (o['len' + K] ?? 1) * u, natural = ARM_LEN * u;
-      const grip = o['grip' + K] || 'open', hold = (GRIPS[grip] || GRIPS.open).hold, holdV = [hold[0] * u * HAND, hold[1] * u * HAND * sd];
-      let a = o['a' + K], bend = o['bend' + K], B, geo;
-      const shape = W => {
+      const K = s ? 'R' : 'L', sd = s ? 1 : -1;
+      const at = o['handAt' + K], target = at ? toWorld(...at) : o['hand' + K], via = o['via' + K]?.length ? o['via' + K] : null;
+      const crossing = target && !at && !via ? -sd * (target[0] - toWorld(BODY_CX, BODY_CY)[0]) / u - 2 : -1;
+      const across = crossing > 0, low = across ? ease(clamp(crossing / 2.5)) : 0;
+      const S = toWorld(...[0, 1].map(k => lerp(SHOULDER[local(s)][k], SHOULDER_LOW[local(s)][k], low)));
+      const len = Math.max(0, o['len' + K] ?? 1), rest = ARM_LEN * Math.max(len, .01) * u, grow = clamp(len / .35);
+      const grip = o['grip' + K] || 'open', hold = (GRIPS[grip] || GRIPS.open).hold, holdV = [hold[0] * u * HAND * grow, hold[1] * u * HAND * grow * sd];
+      let a = o['a' + K], bend = o['bend' + K], B;
+      const underFace = W => {
+        const Sl = toWorld.inv(...S), Wl = toWorld.inv(...W), cub = yb => cubicPath(Sl, [lerp(Sl[0], Wl[0], .25), yb], [lerp(Sl[0], Wl[0], .7), yb], Wl);
+        let yb = Math.max(Sl[1], Wl[1]) + .6, P = cub(yb);
+        for (let k = 0; k < 4; k++) {
+          const dip = Math.max(0, ...P.filter(q => q[0] > FACE.x - 2.8 && q[0] < FACE.x + 2.3).map(q => -4.6 - q[1]));
+          if (dip < .02) break;
+          yb = Math.min(yb + dip * 1.6, Math.max(Sl[1], Wl[1]) + 5); P = cub(yb);
+        }
+        return P.map(q => toWorld(...q));
+      };
+      const pathTo = W => {
+        if (via) return through([S, ...via, W], 10);
+        if (across) return underFace(W);
         const c = Math.hypot(W[0] - S[0], W[1] - S[1]) || 1e-3, d = [(W[0] - S[0]) / c, (W[1] - S[1]) / c], n = [-sd * d[1], sd * d[0]];
         const curl = target && c < rest ? Math.sqrt(3 * c * (rest - c) / 8) : 0;
-        const sag = Math.sign(bend || restBend(a) || 1) * Math.max(Math.abs(bend) * .28 * c, curl);
-        const C = [(S[0] + W[0]) / 2 + n[0] * 2 * sag, (S[1] + W[1]) / 2 + n[1] * 2 * sag], tan = norm([W[0] - C[0], W[1] - C[1]]);
-        return { C, ang: Math.atan2(tan[1], tan[0]) };
+        const sag = Math.sign(bend || restBend(a) || 1) * Math.min(SAG_MAX * u, Math.max(Math.abs(bend) * .28 * c, curl));
+        return quadPath(S, [(S[0] + W[0]) / 2 + n[0] * 2 * sag, (S[1] + W[1]) / 2 + n[1] * 2 * sag], W);
       };
       if (target) {
-        const d = norm([target[0] - S[0], target[1] - S[1]]);
+        const aim = via ? via[0] : target, d = norm([aim[0] - S[0], aim[1] - S[1]]);
         a = Math.atan2(-d[1], sd * d[0]);
         if (bend == null) bend = restBend(a);
         B = target;
-        for (let i = 0; i < 3; i++) { geo = shape(B); const off = rot2(holdV, geo.ang); B = [target[0] - off[0], target[1] - off[1]]; }
+        for (let i = 0; i < 3; i++) { const off = rot2(holdV, endAngle(pathTo(B))); B = [target[0] - off[0], target[1] - off[1]]; }
       } else {
         const swing = walking ? walkArms(p, o.run) : null;
-        if (a == null) a = swing ? swing['a' + K] : -1.2;
-        if (bend == null) bend = swing ? swing['bend' + K] : restBend(a);
-        const d = rot2([sd * Math.cos(a), -Math.sin(a)], lean), chord = rest / (1 + 8 / 3 * (.28 * bend) ** 2);
+        if (a == null) a = swing ? lerp(REST_A, swing['a' + K], stride) : REST_A;
+        if (bend == null) bend = swing ? lerp(restBend(REST_A), swing['bend' + K], stride) : restBend(a);
+        const d = rot2([sd * Math.cos(a), -Math.sin(a)], lean * (swing ? .4 : 1)), chord = rest / (1 + 8 / 3 * (.28 * bend) ** 2);
         B = [S[0] + d[0] * chord, S[1] + d[1] * chord];
       }
-      geo = shape(B);
-      const C = [geo.C[0] + jit(.04 * u), geo.C[1] + jit(.04 * u)], off = rot2(holdV, geo.ang);
-      const front = o['front' + K] ?? false, handFront = front || (o['handFront' + K] ?? !!at);
-      return { K, sd, S, B, C, ang: geo.ang, grip, front, handFront, natural, hook: o['hold' + K], palm: [B[0] + off[0], B[1] + off[1]] };
+      const path = pathTo(B), ang = endAngle(path), off = rot2(holdV, ang);
+      const front = o['front' + K] ?? across, handFront = front || (o['handFront' + K] ?? !!at);
+      return { K, sd, S, B, path, ang, grip, grow, front, handFront, hook: o['hold' + K], thick: clamp(len / .25), palm: [B[0] + off[0], B[1] + off[1]] };
     });
 
-    const drawLimb = A => { rs('arm' + A.K); limb(A.S, A.C, A.B, A.natural, ARM_W[0] * u, ARM_W[1] * u, COL.limb, u, sw, 4); };
+    const drawArm = A => {
+      rs('arm' + A.K);
+      if (A.front) paint(ellPts(A.S[0], A.S[1], ARM_W[0] * u * .62 * A.thick, ARM_W[0] * u * .62 * A.thick, 14), { wash: COL.limb, ink: PAL.ink, sw: sw * .85 });
+      drawLimb(A.path, ARM_LEN * u, ARM_W[0] * u * A.thick, ARM_W[1] * u * A.thick, COL.limb, u, sw, A.sd > 0 ? 11 : 3);
+    };
     const drawHand = A => {
+      if (A.grow < .02) return;
       rs('hand' + A.K);
-      push(); translate(A.B[0], A.B[1]); rotate(A.ang); if (A.sd < 0) scale(1, -1);
-      const upright = () => { if (A.sd < 0) scale(1, -1); rotate(-A.ang); };
+      push(); translate(A.B[0], A.B[1]); rotate(A.ang); if (A.sd < 0) scale(1, -1); scale(A.grow);
+      const upright = () => { scale(1 / A.grow); if (A.sd < 0) scale(1, -1); rotate(-A.ang); };
       glove(A.grip, u, sw, A.hook, upright);
       pop();
     };
 
-    const legs = [0, 1].map(s => {
-      const F = feet[s], H = X(...HIP[local(s)]), K = [F.at[0], F.at[1] - ANKLE_H * u];
-      const cx = K[0] - H[0], cy = K[1] - H[1], c = Math.hypot(cx, cy) || 1e-3, L0 = LEG_REST[local(s)] * u;
-      const perp = [-cy / c, cx / c], kd = [lerp(F.sd, heading, gk), 0], toward = perp[0] * kd[0] + perp[1] * kd[1];
-      const sag = Math.max(.45 * u, c < L0 ? Math.sqrt(3 * c * (L0 - c) / 8) : 0);
-      const C = [(H[0] + K[0]) / 2 + perp[0] * 2 * sag * toward + jit(.04 * u), (H[1] + K[1]) / 2 + perp[1] * 2 * sag * toward + jit(.04 * u)];
-      return { s, H, K, C, L0, F };
-    });
-
     if (!o.noLimbs) {
-      legs.forEach(Lg => {
+      (near ? legs : legs.slice().reverse()).forEach(Lg => {
+        if (Lg.size < .02) return;
         rs('leg' + Lg.s);
-        const col = Lg.s === 0 && gk > 0 ? mixCol(COL.limb, PAL.ink, .2 * gk) : COL.limb;
-        limb(Lg.H, Lg.C, Lg.K, Lg.L0, LEG_W[0] * u, LEG_W[1] * u, col, u, sw, 4);
-        push(); translate(Lg.K[0], Lg.K[1]); rotate(Lg.F.tilt); translate(0, ANKLE_H * u); scale(Lg.F.dir, 1);
-        shoe(u, sw, COL.shoe);
+        const col = Lg.s !== near && stride > 0 ? mixCol(COL.limb, PAL.ink, .2 * stride) : COL.limb, thick = clamp(legLen / .2);
+        drawLimb(quadPath(Lg.H, Lg.C, Lg.K), Lg.L0, LEG_W[0] * u * thick, LEG_W[1] * u * thick, col, u, sw, 20 + Lg.s);
+        push(); translate(Lg.K[0], Lg.K[1]); rotate(Lg.tilt); translate(0, ANKLE_H * u); scale(Lg.foot * Lg.size, Lg.size);
+        shoe(u, sw);
         pop();
       });
-      arms.filter(A => !A.front).forEach(A => { drawLimb(A); if (!A.handFront) drawHand(A); });
+      arms.filter(A => !A.front).forEach(A => { drawArm(A); if (!A.handFront) drawHand(A); });
     }
 
-    bolt(bx + BODY_CX * u, by, u, { ...o, dx: 0, dy: 0, hover: 0, sq, take: 0, rot: lean, noShadow: true, boilKey: id });
+    const hover = HOVER * (1 - grown);
+    drawBody(bx + BODY_CX * u, by + hover * u, u, { ...o, dx: 0, dy: 0, hover, sq, take: 0, rot: lean, noShadow: true, boilKey: id });
 
-    if (!o.noLimbs) arms.forEach(A => { if (A.front) drawLimb(A); if (A.handFront) drawHand(A); });
+    if (!o.noLimbs) arms.forEach(A => { if (A.front) drawArm(A); if (A.handFront) drawHand(A); });
     rs('after');
 
     return {
-      handL: arms[0].palm, handR: arms[1].palm, face: X(FACE.x, FACE.y), top: X(BOLT[1][0], BOLT[1][1]),
-      feet: feet.map(F => F.at), shoulderL: arms[0].S, shoulderR: arms[1].S,
+      handL: arms[0].palm, handR: arms[1].palm, shoulderL: arms[0].S, shoulderR: arms[1].S, face: toWorld(FACE.x, FACE.y), top: toWorld(BOLT[1][0], BOLT[1][1]),
+      feet: legs.map(Lg => Lg.at), armPathL: resamplePath(arms[0].path, 24), armPathR: resamplePath(arms[1].path, 24),
     };
+  }
+
+  function stroll(t, t0, t1, x0, x1, u, run = false) {
+    const x = lerp(x0, x1, ease(seg(t, t0 + .1, t1 - .1))), moving = t > t0 && t < t1;
+    const skipIn = jump(t, t0 + .05, t0 + .33, 2.2), skipOut = jump(t, t1 - .33, t1 - .05, 2.2);
+    const stride = Math.min(ease(seg(t, t0 + .11, t0 + .27)), 1 - ease(seg(t, t1 - .27, t1 - .11)));
+    return { x, walk: moving ? Math.abs(x - x0) / ((run ? GAIT.run : GAIT.walk).travel * u) : null, dir: x1 < x0 ? -1 : 1, stride,
+      dy: skipIn.dy + skipOut.dy, sq: skipIn.sq + skipOut.sq, run };
   }
 
   const box = (s, col = COL.box, off = [0, 0]) => (u, sw, upright) => {
     if (upright) upright();
     translate(off[0] * u, off[1] * u);
     paint(rrPts(-s * u / 2, -s * u / 2, s * u, s * u, .22 * u), { wash: col, ink: PAL.ink, sw: sw * .8 });
-    paint(rrPts(-s * u / 2 + .25 * u, -s * u / 2 + .25 * u, s * u - .5 * u, .35 * u, .12 * u), { wash: '#FFF1B8', ink: null });
+    paint(rrPts(-s * u / 2 + .25 * u, -s * u / 2 + .25 * u, s * u - .5 * u, .35 * u, .12 * u), { wash: COL.boxHi, ink: null });
   };
 
-  window.RIG_C = { qwik, walkArms, box, COL, STRIDE: GAIT.walk.travel, RUN_STRIDE: GAIT.run.travel, ARM_LEN };
+  function heroPose(t, over = {}) {
+    const bp = bpOf(t), f = frac(bp), pump = Math.exp(-f * 6) * Math.cos(f * 10), sway = Math.sin(TAU * t / 2), tap = Math.max(0, Math.sin(TAU * bp - .3));
+    const mood = boltFeel('happy', t);
+    return { ...mood, dy: mood.dy * .5, sq: mood.sq * .8, eyes: 'wink', mouth: 'grin', blush: .45,
+      aR: .82 + .16 * pump, bendR: -.32 + .3 * pump, gripR: 'thumb', lenR: 1.02,
+      aL: -.12 + .05 * Math.sin(TAU * t / 2 + .8) + .05 * Math.exp(-frac(bp + .5) * 6), bendL: .32 + .06 * sway, gripL: 'wave', lenL: .96,
+      toeR: tap * .9, stepR: [.8, 0], stepL: [-.2, 0], rot: -.035 + .02 * sway, dx: .1 + .22 * sway, seed: 7, ...over };
+  }
+
+  function coolPose(t, over = {}) {
+    const bp = bpOf(t), nod = Math.exp(-frac(bp) * 5);
+    return { ...boltFeel('cool', t), legFront: 'L', stepL: [1.6, 0], stepR: [.1, 0], toeL: .5 + .3 * nod, lean: .1 + .02 * nod,
+      handAtL: [-6.2, -3.4], gripL: 'fist', bendL: -1, aR: -.55 + .05 * nod, bendR: .45, gripR: 'open', ...over };
+  }
+
+  window.RIG_C = { qwik, walkArms, stroll, box, heroPose, coolPose, COL, STRIDE: GAIT.walk.travel, RUN_STRIDE: GAIT.run.travel, ARM_LEN };
 
   const floor = (y, x0 = 0, x1 = W) => inkLine([[x0 + 40, y + 6], [(x0 + x1) / 2, y + 4], [x1 - 40, y + 7]], .6, mixCol(PAL.paper, PAL.ink, .35), 'inkfine', .5);
 
-  LOOPS.rigCLab = t => {
-    const grips = Object.keys(GRIPS), u = 36;
-    grips.forEach((g, i) => {
-      const x = 170 + i * 300, y = 300;
-      boilSeed('lab arm' + i);
-      limb([x - 5 * u, y + 1.2 * u], [x - 2.5 * u, y + 1.6 * u], [x, y], ARM_LEN * u, ARM_W[0] * u, ARM_W[1] * u, COL.limb, u, 2, 5);
-      push(); translate(x, y); rotate(-.2); glove(g, u, 2, g === 'grab' ? box(2.2) : null, () => rotate(.2)); pop();
-    });
-    [[400, 850, 1], [900, 850, -1], [1400, 850, 1]].forEach(([x, y, d], i) => {
-      boilSeed('lab shoe' + i);
-      limb([x - .5 * u, y - 7 * u], [x - 1.5 * u, y - 4 * u], [x, y - ANKLE_H * u], 8 * u, LEG_W[0] * u, LEG_W[1] * u, COL.limb, u, 2, 4);
-      push(); translate(x, y); scale(d, 1); shoe(u, 2, COL.shoe); pop();
-    });
-  };
-  LOOPS.rigCLab.len = 2;
-
   LOOPS.rigC = t => {
-    const u = 11, cw = W / 3, gy = [470, 985];
+    const u = 11, cw = W / 3, gy = [470, 985], bp = bpOf(t);
     gy.forEach(g => floor(g));
     const cell = (c, r) => [cw * (c + .5), gy[r]];
 
     {
-      const [x, y] = cell(0, 0);
-      const bp = t / BEAT, drag = Math.sin(TAU * bp - 1.1);
-      RIG_C.qwik(x, y, u, { ...boltFeel('happy', t), aL: -1.02 + .08 * Math.sin(TAU * t / 2 + .4) + .06 * drag, aR: -.92 + .1 * Math.sin(TAU * t / 2 + 2.1) + .05 * Math.sin(TAU * bp - 1.5),
-        bendL: -.32 - .12 * drag, bendR: -.3 - .1 * Math.sin(TAU * bp - 1.6), dx: .3 * Math.sin(TAU * t / 2), rot: .025 * Math.sin(TAU * t / 2 - .5), seed: 1 });
+      const [x, y] = cell(0, 0), sway = Math.sin(TAU * t / 2), trail = Math.sin(TAU * bp - 1.2), trail2 = Math.sin(TAU * bp - 1.7);
+      qwik(x, y, u, { ...boltFeel('happy', t), aL: -1.14 + .07 * Math.sin(TAU * t / 2 + .4) + .05 * trail, aR: -1.02 + .08 * Math.sin(TAU * t / 2 + 2.2) + .05 * trail2,
+        bendL: -.36 - .16 * trail, bendR: -.28 - .14 * trail2, dx: .35 * sway, rot: .03 * Math.sin(TAU * t / 2 - .6), toeR: Math.max(0, Math.sin(TAU * bp)) * .7, seed: 1 });
     }
     {
       const [x, y] = cell(1, 0), p = t;
       for (let i = 0; i < 9; i++) {
-        const tx = x - 260 + frac(i / 9 - p * RIG_C.STRIDE * u / 520) * 520;
+        const tx = x - 260 + frac(i / 9 - p * GAIT.walk.travel * u / 520) * 520;
         inkLine([[tx, y + 14], [tx + 14, y + 14]], .8, mixCol(PAL.paper, PAL.ink, .4), 'inkfine', 0);
       }
-      RIG_C.qwik(x, y, u, { ...boltFeel('happy', t), walk: p, aL: undefined, aR: undefined, seed: 2 });
+      qwik(x, y, u, { ...boltFeel('happy', t), walk: p, aL: undefined, aR: undefined, lookX: .45, seed: 2 });
     }
     {
-      const [x, y] = cell(2, 0), w = Math.sin(TAU * 2 * t);
-      RIG_C.qwik(x, y, u, { ...boltFeel('happy', t), aR: 1.25 + .28 * w, bendR: -.2 - .35 * Math.cos(TAU * 2 * t), gripR: 'wave', aL: -1.2, bendL: -.3, seed: 3 });
+      const [x, y] = cell(2, 0), w = TAU * 2 * t;
+      qwik(x, y, u, { ...boltFeel('happy', t), aR: 1.18 + .26 * Math.sin(w), bendR: -.12 - .42 * Math.sin(w - 1.3), gripR: 'wave', lenR: 1.05,
+        aL: -1.12 + .05 * Math.sin(w * .5), bendL: -.3, rot: .05 + .015 * Math.sin(w), dx: .25, seed: 3 });
     }
     {
-      const [x, y] = cell(0, 1);
+      const [x, y] = cell(0, 1), jab = Math.exp(-frac(bp) * 7);
       paint(starPts(x + 250, y - 150, 22, .45, 5, -Math.PI / 2 + .2 * Math.sin(TAU * t)), { wash: PAL.ochre, ink: PAL.ink, sw: .8 });
-      RIG_C.qwik(x - 40, y, u, { ...boltFeel('neutral', t), eyes: 'normal', lookX: 1, lookY: -.3, aR: .25 + .04 * Math.sin(TAU * t), bendR: .05, gripR: 'point', handAtL: [-5.9, -3.3], gripL: 'fist', bendL: -.9, seed: 4 });
+      qwik(x - 40, y, u, { ...boltFeel('happy', t), eyes: 'look', mouth: 'smile', lookX: 1, lookY: -.35, aR: .28 + .05 * jab, bendR: .08 - .1 * jab, lenR: 1.02 + .08 * jab, gripR: 'point',
+        handAtL: [-5.9, -3.3], gripL: 'fist', bendL: -.9, rot: .05, legSpread: 1.1, seed: 4 });
     }
     {
-      const [x, y] = cell(1, 1), sx = x - 150, bx = x + 250, by = y - 1.7 * u;
+      const [x, y] = cell(1, 1), sx = x - 150, bx = x + 222, by = y - 1.7 * u;
       const out = easeOut(seg(t, .2, .42)), back = seg(t, 1.56, 1.76), held = t > .42 && t < 1.56;
       const tug = held ? Math.sin(TAU * 2.5 * (t - .42)) * Math.exp(-(t - .42) * .6) : 0, yank = held ? .5 - .5 * Math.cos(TAU * (t - .42) / 1.2) : 0;
       const boxX = bx - 22 * yank, boxY = by - 3 * Math.abs(tug);
+      paint(ellPts(boxX, y + .1 * u, 2 * u * (1 - .3 * yank), .45 * u, 16), { fill: PAL.ink, fillOp: 60 * (1 - .5 * Math.abs(tug)), bleed: .2, tex: .3, border: .1, ink: null });
       if (!held) paint(rrPts(boxX - 1.4 * u, boxY - 1.4 * u, 2.8 * u, 2.8 * u, .22 * u), { wash: COL.box, ink: PAL.ink, sw: .8 });
-      if (!held) paint(rrPts(boxX - 1.15 * u, boxY - 1.15 * u, 2.3 * u, .35 * u, .12 * u), { wash: '#FFF1B8', ink: null });
+      if (!held) paint(rrPts(boxX - 1.15 * u, boxY - 1.15 * u, 2.3 * u, .35 * u, .12 * u), { wash: COL.boxHi, ink: null });
       const grip = [boxX - 1.15 * u, boxY], rest = [sx + 5 * u, y - 13 * u], reachT = [lerp(rest[0], grip[0], out), lerp(rest[1], grip[1], out) - 40 * Math.sin(Math.PI * out)];
       const snap = back > 0 ? [lerp(grip[0], rest[0], easeOut(back)) + 12 * spring(t, 1.76, 10, 20), lerp(grip[1], rest[1], easeOut(back))] : null;
       const wind = seg(t, 0, .2) * (1 - seg(t, .2, .3));
       const hand = snap || (t < .2 ? [rest[0] - 8 * wind * u / 11, rest[1] + 10 * wind] : reachT);
       const recoil = spring(t, 1.76, 9, 16);
-      RIG_C.qwik(sx, y, u, { ...boltFeel('determined', t), handR: hand, gripR: held ? 'grab' : back > 0 && t < 1.9 ? 'open' : t > .2 && t < 1.9 ? 'grab' : 'fist', holdR: held ? box(2.8, COL.box, [1.15, 0]) : null,
+      qwik(sx, y, u, { ...boltFeel('determined', t), handR: hand, gripR: held ? 'grab' : back > 0 && t < 1.9 ? 'open' : t > .2 && t < 1.9 ? 'grab' : 'fist', holdR: held ? box(2.8, COL.box, [1.15, 0]) : null,
         bendR: .15, aL: .7 + .45 * out * (1 - back) + .15 * tug, bendL: .35 - .2 * tug, lean: -.05 - .14 * (held ? 1 : out) * (1 - back) - .05 * tug + .06 * recoil - .05 * wind,
         legSpread: 1.25, dx: -.5 * out * (1 - back), seed: 5 });
     }
     {
       const [x, y] = cell(2, 1), k = frac(t), hop = jump(k, .2, .72, 3.2), lag = jump(frac(t - .07), .2, .72, 3.2);
-      const bw = 8 * u, bh = 5 * u, cx = x - 1.4 * u, cy = y - (26.6 - lag.dy) * u + lag.sq * 3 * u;
-      paint(rrPts(cx - bw / 2, cy - bh / 2, bw, bh, .4 * u), { wash: COL.box, ink: PAL.ink, sw: .8 });
-      paint(rrPts(cx - bw / 2 + .4 * u, cy - bh / 2 + .4 * u, bw - .8 * u, .6 * u, .2 * u), { wash: '#FFF1B8', ink: null });
-      RIG_C.qwik(x, y, u, { ...boltFeel('excited', t), dy: hop.dy, sq: hop.sq, handL: [cx - bw / 2 - .2 * u, cy], handR: [cx + bw / 2 + .2 * u, cy], gripL: 'open', gripR: 'open', bendL: .35, bendR: .35, seed: 6 });
+      const bw = 8 * u, bh = 5 * u, cx = x - 1.4 * u, cy = y - (26.6 - lag.dy) * u + lag.sq * 3 * u, tilt = .07 * Math.sin(TAU * (k - .3)) - .03;
+      const side = sd => [cx + sd * Math.cos(tilt) * (bw / 2 + .2 * u), cy + sd * Math.sin(tilt) * (bw / 2 + .2 * u)];
+      push(); translate(cx, cy); rotate(tilt);
+      paint(rrPts(-bw / 2, -bh / 2, bw, bh, .4 * u), { wash: COL.box, ink: PAL.ink, sw: .8 });
+      paint(rrPts(-bw / 2 + .4 * u, -bh / 2 + .4 * u, bw - .8 * u, .6 * u, .2 * u), { wash: COL.boxHi, ink: null });
+      pop();
+      qwik(x, y, u, { ...boltFeel('excited', t), dy: hop.dy, sq: hop.sq, handL: side(-1), handR: side(1), gripL: 'open', gripR: 'open', bendL: .4, bendR: .28, seed: 6 });
     }
   };
   LOOPS.rigC.len = 2;
 
+  LOOPS.rigCHero = t => {
+    floor(960, 200, 1720);
+    qwik(960, 960, 26, heroPose(t));
+  };
+  LOOPS.rigCHero.len = 2;
+
   LOOPS.rigCTest = t => {
     const u = 11, gy = [470, 985];
     gy.forEach(g => floor(g));
-    const at = (i, r) => [240 + i * 480, gy[r]];
-    RIG_C.qwik(...at(0, 0), u, { ...boltFeel('happy', t), flip: true, aR: 1.2 + .3 * Math.sin(TAU * 2 * t), gripR: 'wave', seed: 11 });
-    RIG_C.qwik(...at(1, 0), u, { ...boltFeel('determined', t), walk: t * 1.5, run: true, aL: undefined, aR: undefined, seed: 12 });
-    RIG_C.qwik(...at(2, 0), u, { ...boltFeel('happy', t), walk: t, dir: -1, aL: undefined, aR: undefined, seed: 13 });
-    RIG_C.qwik(...at(3, 0), u, { ...boltFeel('excited', t), aR: .15, lenR: 2.5 + 1.5 * Math.sin(TAU * t / 2), gripR: 'point', aL: .8, seed: 14 });
+    const at = (i, r) => [200 + i * 380, gy[r]];
+    qwik(...at(0, 0), u, { ...boltFeel('happy', t), flip: true, aR: 1.2 + .3 * Math.sin(TAU * 2 * t), gripR: 'wave', seed: 11 });
+    qwik(...at(1, 0), u, { ...boltFeel('determined', t), walk: t * 1.5, run: true, aL: undefined, aR: undefined, seed: 12 });
+    qwik(...at(2, 0), u, { ...boltFeel('happy', t), walk: t, flip: true, lookX: .5, aL: undefined, aR: undefined, seed: 13 });
+    qwik(...at(3, 0), u, { ...boltFeel('excited', t), aR: .15, lenR: 2.5 + 1.5 * Math.sin(TAU * t / 2), gripR: 'point', aL: .8, seed: 14 });
     const J = jump(t, .3, 1.3, 7);
-    RIG_C.qwik(...at(0, 1), u, { ...boltFeel('excited', t), dy: J.dy, sq: J.sq, aL: 1.2, aR: 1.3, gripL: 'wave', gripR: 'wave', seed: 15 });
-    RIG_C.qwik(...at(1, 1), u, { ...boltFeel('happy', t), turnX: .55 + .45 * Math.cos(TAU * t / 2), seed: 16 });
-    RIG_C.qwik(...at(2, 1), u, { ...boltFeel('scared', t), lean: -.3, sx: .9, sy: 1.1, aL: 1.3, aR: 1.4, gripL: 'open', gripR: 'open', seed: 17 });
-    camBegin(1680, 820, 2.2);
-    RIG_C.qwik(1680, 900, 6, { ...boltFeel('happy', t), gripR: 'thumb', aR: .9, seed: 18 });
-    camEnd();
+    qwik(...at(4, 0), u, { ...boltFeel('excited', t), dy: J.dy, sq: J.sq, aL: 1.2, aR: 1.3, gripL: 'wave', gripR: 'wave', seed: 15 });
+    qwik(...at(0, 1), u, { ...boltFeel('happy', t), turnX: .55 + .45 * Math.cos(TAU * t / 2), seed: 16 });
+    qwik(...at(1, 1), u, { ...boltFeel('thinking', t), handR: [at(1, 1)[0] - 9 * u, gy[1] - (12 + 3 * Math.sin(TAU * t / 2)) * u], gripR: 'point', bendR: .3, seed: 19 });
+    qwik(...at(2, 1), u, { ...boltFeel('happy', t), handL: [at(2, 1)[0] + 7 * u, gy[1] - 16 * u], gripL: 'grab', seed: 20 });
+    const [lx, ly] = at(3, 1);
+    bolt(lx - 60, ly, u, { ...boltFeel('happy', t), boilKey: 'ref' });
+    qwik(lx + 90, ly, u, { ...boltFeel('happy', t), legLen: 0, lenL: 0, lenR: 0, boilKey: 'tuck' });
+    qwik(...at(4, 1), u, { legLen: .5 + .5 * Math.sin(TAU * t / 2), lenL: 0, lenR: 1, noFace: true, noSpark: true, aR: .5, seed: 21 });
   };
   LOOPS.rigCTest.len = 2;
 
-  LOOPS.rigCHero = t => {
-    const u = 26, x = 920, y = 960, pump = pulse(t, 5);
-    floor(y, 200, 1720);
-    const bp = t / BEAT, beat = Math.floor(bp), f = bp - beat, hit = Math.exp(-f * 7) * Math.cos(f * 12), shift = Math.sin(TAU * t / 2);
-    const mood = boltFeel('happy', t);
-    RIG_C.qwik(x, y, u, { ...mood, dy: mood.dy * .55, eyes: 'wink', mouth: 'grin', handAtL: [-6.2, -3.1 + .15 * hit], gripL: 'fist', bendL: -1,
-      aR: .72 + .22 * hit, bendR: -.2 + .35 * hit, gripR: 'thumb', legSpread: 1.12, dx: .35 * shift, rot: .03 * shift, seed: 7 });
+  LOOPS.rigCStress = t => {
+    const u = 20, y = 900;
+    floor(y, 100, 1820);
+    const legLen = kf(t, [[0, 0], [.3, 0], [.55, 1.3], [.8, .92], [1, 1], [1.6, 1], [1.85, 0]], easeOut);
+    const len = kf(t, [[0, 0], [.45, 0], [.7, 2], [.95, 1], [1.5, 1], [1.8, 0]], easeOut);
+    qwik(360, y, u, { ...boltFeel('happy', t), legLen, lenL: len, lenR: len, aL: .3, aR: .4, boilKey: 'spring' });
+    qwik(860, y, u, { ...boltFeel('excited', t), sx: .4, sy: 1.8, aL: 1.4, aR: 1.45, lenL: 1.3, lenR: 1.3, boilKey: 'thin' });
+    const yawn = .5 + .5 * Math.sin(TAU * t / 2);
+    qwik(1300, y, u, { ...boltFeel('sleepy', t), mouth: 'yawn', aL: 1.3, aR: 1.2, lenL: 1 + 2 * yawn, lenR: 1 + 2 * yawn, bendL: -.2, bendR: -.25, gripL: 'fist', gripR: 'fist', lean: -.05, boilKey: 'yawn' });
+    qwik(1680, y, u, coolPose(t, { boilKey: 'cool' }));
   };
-  LOOPS.rigCHero.len = 2;
+  LOOPS.rigCStress.len = 2;
+
+  LOOPS.rigCDbg = t => {
+    [[11, 300, 500], [34, 1200, 1000]].forEach(([u, x, y], i) => {
+      floor(y, x - 400, x + 400);
+      const k = frac(t), hop = jump(k, .2, .72, 3.2), lag = jump(frac(t - .07), .2, .72, 3.2);
+      const bw = 8 * u, bh = 5 * u, cx = x - 1.4 * u, cy = y - (26.6 - lag.dy) * u + lag.sq * 3 * u, tilt = .07 * Math.sin(TAU * (k - .3)) - .03;
+      const side = sd => [cx + sd * Math.cos(tilt) * (bw / 2 + .2 * u), cy + sd * Math.sin(tilt) * (bw / 2 + .2 * u)];
+      qwik(x, y, u, { ...boltFeel('excited', t), dy: hop.dy, sq: hop.sq, handL: side(-1), handR: side(1), gripL: 'open', gripR: 'open', bendL: .4, bendR: .28, seed: 6, boilKey: 'd' + i });
+    });
+  };
+  LOOPS.rigCDbg.len = 2;
+
+  LOOPS.rigCPoster = t => {
+    const u = 20, y = 900, reach = ease(seg(t, .1, 1.1));
+    camBegin(3250, 520, .5);
+    floor(y, 1300, 5200);
+    paint(rrPts(1500, 166, 64, 56, 8), { wash: COL.box, ink: PAL.ink, sw: 1.4 });
+    const hand = [lerp(4700, 1540, reach), lerp(y - 14 * u, 194, reach) - 300 * Math.sin(Math.PI * reach)];
+    const via = reach > .05 ? [[lerp(4800, 4500, reach), lerp(y - 18 * u, 120, reach)], [lerp(4700, 3000, reach), lerp(y - 16 * u, 80, reach)]] : null;
+    qwik(4880, y, u, { ...boltFeel('determined', t), handL: hand, viaL: via, gripL: 'grab', aR: -.4, bendR: .3, lean: .1, legSpread: 1.3, boilKey: 'long' });
+    camEnd();
+  };
+  LOOPS.rigCPoster.len = 2;
 })();
