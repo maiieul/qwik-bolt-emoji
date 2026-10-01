@@ -68,7 +68,7 @@ on props (`HTML`, `JS`), the badge digit and the review stars are the only other
 
 | when | text |
 |---|---|
-| −5.0 → −1.2 | First visit, on a very slow network |
+| −4.5 → −1.2 | First visit, on a very slow network |
 | 3.0 / 3.5 → 5.3 | small "Qwik", then **JavaScript Streaming** |
 | 6.5 → 14.8 | 1 · The server renders the page |
 | 15.5 → 25.5 | 2 · HTML arrives in pieces, slow parts last |
@@ -94,17 +94,19 @@ The shop is **boltplush.shop**, the page the rest of the film builds. Bolt is no
   hold on the full address (−7.6–−7.0).
   - reads: −8.5–−7.0 the user types boltplush.shop
 - **I3 −7.0–−5.0 · Enter.** The finger presses (−7.0) with a small ↵ burst; the tab's icon becomes a spinner and a thin
-  progress bar appears under the address bar. A rolled paper request slip pops out of the address bar and flutters onto
-  the snail nook above the nozzle, where a sleepy snail wakes up with it on its shell, yawns and sets off left along
-  the top of the tube toward the porthole. The camera follows the slip (−6.5–−6.0), holds on the snail, then pulls back
-  to show the window, the tube, the nook and the porthole (−5.25–−4.5).
+  progress bar appears under the address bar. The request slip (B1's paper card with the page thumbnail) pops out of
+  the address bar and flutters onto the snail nook above the nozzle, where a sleepy snail wakes up with it on its shell,
+  yawns, turns and scoots off left along the top of the tube toward the porthole (−5.2). The camera follows the slip
+  (−6.6–−5.95), holds on the snail, then pulls back to show the window, the tube, the nook and the porthole (−5.05–−4.4).
   - reads: −7.0–−6.3 Enter: the page starts loading · −6.3–−5.0 the request rides off on a snail
 - **I4 −5.0–−2.0 · The wait.** The snail crawls, painfully slow; the progress bar inches along; the hand drums its
-  fingers on the page by the window's edge; the page stays blank. Caption at −5.0. At −3.0 the wall clock's hands
-  whizz (time passes) and the snail is suddenly at the porthole (−2.6); it squeezes through and is gone (−2.6–−2.15).
+  fingers on the page by the window's edge; the page stays blank. Caption at −4.5. At −3.0 the wall clock's hands
+  whizz (time passes) and the camera follows the snail's dash to the porthole (−2.6); in close-up it squeezes through,
+  pops out (−2.25) and is gone (−2.05).
   - reads: −5.0–−3.0 everything is very slow · −3.0–−2.0 the request finally leaves the house
-- **I5 −2.0–0.0 · Into the title.** The hand drifts off; the camera pushes into the blank page until it fills the
-  frame and turns to paper (pure paper by −0.25), where A1's logo paint-on begins at 0.0.
+- **I5 −2.0–0.0 · Into the title.** The camera pushes from the porthole into the blank page until the browser fills the
+  frame, its spinner still turning and the bar stalled (−0.6), and turns to paper (pure paper by −0.25), where A1's logo
+  paint-on begins at 0.0.
   - reads: −2.0–−0.5 still nothing on screen · −0.5–0.0 into the title
 
 ### A · Title (0.0–6.0) · paper void · `bookends.js`

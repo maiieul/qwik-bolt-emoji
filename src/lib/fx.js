@@ -1,7 +1,7 @@
 // fx.js: the step captions overlay, the title and end-card lettering, and the whip, paper-over and iris transitions.
 (() => {
   const CAPTIONS = [
-    { n: null, t0: -5.0, t1: -1.2, text: 'First visit, on a very slow network' },
+    { n: null, t0: -4.5, t1: -1.2, text: 'First visit, on a very slow network' },
     { n: 1, t0: 6.5, t1: 14.8, text: 'The server renders the page' },
     { n: 2, t0: 15.5, t1: 25.5, text: 'HTML arrives in pieces, slow parts last' },
     { n: 3, t0: 28.5, t1: 34.6, text: 'JavaScript streams in the background' },

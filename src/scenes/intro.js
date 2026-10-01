@@ -11,9 +11,9 @@
 
   const AT = {
     handIn: -9.62, hover: -9.12, click: -9.0, lift: -7.5, wind: -7.22, enter: -7.0,
-    slipPop: -6.5, slipLand: -6.0, wake: -5.96, yawn: -5.72, yawnEnd: -5.36, turn: -5.3, crawl: -5.2,
-    whizz: -3.0, whizzEnd: -2.5, atPort: -2.6, stuck: -2.44, pop: -2.25, gone: -2.15,
-    handOff: -2.0, paper0: -0.58, paper1: -0.25,
+    slipPop: -6.5, slipLand: -6.0, wake: -5.96, yawn: -5.72, yawnEnd: -5.36, turn: -5.3, crawl: -5.2, pullBack: -5.05, wideFrame: -4.4,
+    whizz: -3.0, whizzEnd: -2.5, portFrame: -2.62, atPort: -2.6, stuck: -2.44, pop: -2.25, gone: -2.05,
+    handOff: -2.0, pushIn: -2.0, paper0: -0.58, paper1: -0.25,
   };
   const LETTER_AT = [36, 37, 39, 40, 43, 44, 46, 47, 49, 52, 53, 55, 56, 58].map(frameTime);
   const TAP_AT = [36, 39, 43, 46, 49, 52, 55, 58].map(frameTime);
@@ -21,14 +21,16 @@
 
   const CAM_KEYS = [
     [-10.0, [5452, 508, 1.47]], [AT.click + .05, [5440, 503, 1.5]], [-8.5, [5292, 468, 2.7]], [AT.slipPop - .1, [5290, 466, 2.72]],
-    [AT.slipPop + .25, [5175, 300, 2.3]], [AT.slipLand + .05, [5098, 252, 2.9]], [AT.turn + .05, [5092, 255, 2.84]],
-    [-4.5, [5120, 478, 1.11]], [AT.whizz, [5116, 474, 1.12]], [AT.handOff, [5110, 466, 1.17]], [-0.6, [5470, 645, 2.62]], [0, [5470, 645, 2.74]],
+    [AT.slipLand + .05, [5098, 252, 2.9], { via: [[5230, 330], [5120, 255]], dip: .87 }], [AT.pullBack, [5092, 255, 2.84]],
+    [AT.wideFrame, [5120, 478, 1.11]], [AT.whizz, [5116, 474, 1.12]], [AT.portFrame, [4660, 330, 1.55]], [AT.pushIn, [4655, 332, 1.57]],
+    [-0.6, [5457, 612, 2.25]], [0, [5457, 614, 2.3]],
   ];
   function camAt(t) {
     let i = 0;
     while (i < CAM_KEYS.length - 2 && t >= CAM_KEYS[i + 1][0]) i++;
-    const [ta, A] = CAM_KEYS[i], [tb, B] = CAM_KEYS[i + 1], k = ease(seg(t, ta, tb));
-    return [lerp(A[0], B[0], k), lerp(A[1], B[1], k), zoomLerp(A[2], B[2], k)];
+    const [ta, A] = CAM_KEYS[i], [tb, B, curve] = CAM_KEYS[i + 1], k = ease(seg(t, ta, tb));
+    const [x, y] = curve ? bez3(A, ...curve.via, B, k) : mix2(A, B, k), dip = curve ? 1 - (1 - curve.dip) * Math.sin(Math.PI * k) : 1;
+    return [x, y, zoomLerp(A[2], B[2], k) * dip];
   }
 
   function addressAt(t) {
@@ -85,7 +87,7 @@
     for (const at of TAP_AT) { const f = Math.round((t - at) * 24); p = Math.max(p, f === 0 ? .78 : f === 1 ? .42 : f === 2 ? .1 : f === -1 ? .18 : 0); }
     return p;
   }
-  const drumPhase = t => bpOf(t) + .62 + 2 * ease(seg(t, AT.whizz, AT.whizzEnd));
+  const drumPhase = t => bpOf(t) + .12 + 2 * ease(seg(t, AT.whizz, AT.whizzEnd));
   function handAt(t) {
     if (t < AT.hover) {
       const s = seg(t, AT.handIn, AT.hover), k = 1 - Math.pow(1 - s, 2.2);
@@ -111,8 +113,9 @@
     }
     if (t < AT.handOff) {
       const go = ease(seg(t, AT.enter + .4, -5.75)), p = bez3(AWAY, [AWAY[0] + 300, AWAY[1] - 60], [DRUM[0] + 40, DRUM[1] - 160], DRUM, go);
-      const drumming = seg(t, -5.75, -5.6), phase = drumPhase(t), tap = drumming * Math.max(0, Math.sin(phase * TAU)) * 1.5;
-      return { p: add2(p, [0, -tap]), rot: lerp(-.22, .06, go), pose: drumming > .5 ? 'drum' : 'point', phase, lift: 1 - .8 * drumming };
+      const drumming = seg(t, -5.75, -5.6), phase = drumPhase(t), rolling = drumming * Math.sin(Math.PI * seg(frac(phase), 0, .62)), since = frac(phase - .62) / 2;
+      return { p: add2(p, [2 * rolling, -8 * rolling]), rot: lerp(-.22, .06, go) + .05 * rolling, pose: drumming > .5 ? 'drum' : 'point', phase,
+        sq: .08 * drumming * Math.exp(-since * 20) * Math.cos(since * 40), lift: 1 - .8 * drumming + .25 * rolling };
     }
     const lift = ease(seg(t, AT.handOff, AT.handOff + .25)), go = easeIn(seg(t, AT.handOff + .15, AT.handOff + .75));
     return { p: add2(mix2(DRUM, EXIT, go), [6 * lift, -14 * lift]), rot: .06 + .2 * lift, pose: 'point', from: 'drum', k: seg(t, AT.handOff, AT.handOff + .2), phase: drumPhase(t), lift: .2 + .8 * lift };
@@ -149,11 +152,12 @@
     paint(RETURN_ARROW.map(([x, y]) => [c[0] + (x * Math.cos(rot) - y * Math.sin(rot)) * s, c[1] + (x * Math.sin(rot) + y * Math.cos(rot)) * s]), { wash: QWIK.blue, ink: PAL.ink, sw: .8 });
   }
 
-  const SNAIL = { x: NOOK.x1 - 77, y: NOOK.y - 5, slipS: .62 }, QUILT_END = NOOK.x0 + 17;
-  const X_PORT = PORT_X + 69, X_STUCK = PORT_X + 37, X_OUT = PORT_X - 215;
+  const SNAIL = { x: NOOK.x1 - 77, y: NOOK.y - 5, slipS: .72 }, QUILT_END = NOOK.x0 + 17;
+  const X_PORT = PORT_X + 69, X_STUCK = PORT_X + 37, X_OUT = PORT_X - 480;
+  const SCOOT = { px: 20, dur: .3, crawlFrom: .2 };
   function crawled(t) {
-    const tau = Math.max(0, Math.min(t, AT.whizz) - AT.crawl);
-    return 44 * (tau - .3 * (1 - Math.exp(-tau / .3)));
+    const tau = Math.max(0, Math.min(t, AT.whizz) - AT.crawl - SCOOT.crawlFrom);
+    return SCOOT.px * ease(seg(t, AT.crawl, AT.crawl + SCOOT.dur)) + 44 * (tau - .3 * (1 - Math.exp(-tau / .3)));
   }
   const X_WHIZZ = SNAIL.x - crawled(AT.whizz);
   function snailX(t) {
@@ -180,10 +184,12 @@
     Object.assign(o, { emote: null, eyes: yawn < .85 ? 'squeeze' : 'sleepy', yawn: yawn < .9 ? Math.sin(Math.PI * yawn / .9) : 0, lookX: 0, lookY: -.2, droop: .25 * stretch, sq: -.16 * stretch, dy: -.4 * stretch });
     if (t < AT.turn) return o;
     const squash = bump(t, AT.turn, AT.turn + .1), settle = spring(t, AT.turn + .1, 9, 24), alert = t < AT.crawl + .25;
-    Object.assign(o, { flip: t >= AT.turn + .05, eyes: t < AT.crawl ? 'squeeze' : alert ? 'normal' : 'sleepy', yawn: 0, droop: alert ? .1 : .4, lookX: .5, lookY: 0, sq: .28 * squash - .1 * settle, dy: 0 });
+    const scoot = bump(t, AT.crawl, AT.crawl + SCOOT.dur * .8) - .4 * bump(t, AT.crawl + SCOOT.dur * .6, AT.crawl + SCOOT.dur * 1.4);
+    Object.assign(o, { flip: t >= AT.turn + .05, eyes: t < AT.crawl ? 'squeeze' : alert ? 'normal' : 'sleepy', yawn: 0, droop: alert ? .1 : .4, lookX: .5, lookY: 0,
+      sq: .28 * squash - .1 * settle + .22 * scoot, dy: 0, trail: Math.min(26, SNAIL.x - x) });
     if (t < AT.whizz) return o;
     const zip = bump(t, AT.whizz, AT.atPort);
-    Object.assign(o, { eyes: zip > .2 ? 'squeeze' : 'normal', droop: .3 * (1 - zip), lookX: -.4 * zip, sq: -.12 * zip });
+    Object.assign(o, { eyes: zip > .2 ? 'squeeze' : 'normal', droop: .3 * (1 - zip), lookX: -.4 * zip, sq: -.12 * zip, trail: 26 * (1 - seg(t, AT.whizz, AT.whizz + .1)) });
     if (t < AT.atPort) return o;
     const push = easeOut(seg(t, AT.atPort, AT.stuck)), strain = seg(t, AT.stuck - .06, AT.pop);
     Object.assign(o, { eyes: 'squeeze', mouth: strain > 0 ? 'teeth' : 'flat', droop: 0, duck: .5 * push, sweat: strain, sq: -.42 * push + .08 * Math.sin((t - AT.stuck) * 55) * strain });
@@ -199,27 +205,26 @@
   function slipOnShell(o) {
     const out = 1 - ease(seg(o.hide || 0, .15, .7)), sRot = .05 * Math.sin(o.crawl * TAU + .2) * out - .06 * (o.duck || 0);
     const at = snailCarry(o.x, o.y, U, { crawl: o.crawl, duck: o.duck, hide: o.hide, sq: o.sq, flip: o.flip, dy: o.dy });
-    return { c: [at[0], at[1] - 7 * SNAIL.slipS], rot: (o.flip ? -1 : 1) * sRot * .8, sx: 1 + (o.sq || 0) * .35, sy: 1 - (o.sq || 0) };
+    return { c: [at[0], at[1] - 5.5 * SNAIL.slipS], rot: (o.flip ? -1 : 1) * (sRot * .8 - .1), sx: 1 + (o.sq || 0) * .35, sy: 1 - (o.sq || 0) };
   }
-  function drawRoll(c, s, o = {}) {
-    const rot = o.rot || 0, sx = o.sx ?? 1, sy = o.sy ?? 1;
-    slip(c[0] - 24 * s * sy * Math.sin(rot), c[1] + 24 * s * sy * Math.cos(rot), s, { curl: 1, rot, sx, sy, flutter: o.flutter || 0, key: 'req' });
-    boilSeed('intro slip ribbon');
-    const band = [[-3, -12.5], [3, -12.5], [3.5, 12.5], [-3.5, 12.5]].map(([a, b]) => [a * s * sx, b * s * sy]);
-    paint(band.map(([a, b]) => [c[0] + a * Math.cos(rot) - b * Math.sin(rot), c[1] + a * Math.sin(rot) + b * Math.cos(rot)]), { wash: '#D8394E', ink: PAL.ink, sw: .45 });
+  const SLIP_CURL = .45, SLIP_ROLL_Y = lerp(43 - 3.5, -24, SLIP_CURL);
+  function drawSlip(roll, s, o = {}) {
+    const rot = o.rot || 0, sy = o.sy ?? 1, d = SLIP_ROLL_Y * s * sy;
+    slip(roll[0] + d * Math.sin(rot), roll[1] - d * Math.cos(rot), s, { curl: SLIP_CURL, rot, sx: o.sx ?? 1, sy, flutter: o.flutter || 0, key: 'req' });
   }
 
   const POP_FROM = [TEXT_X + 62, BAR_Y - 2];
-  function slipFlight(t, landC) {
+  function slipFlight(t, land) {
     const s = seg(t, AT.slipPop, AT.slipLand), top = [POP_FROM[0] + 2, POP_FROM[1] - 34], u = seg(s, .12, 1);
     const sway = 16 * Math.sin(u * Math.PI * 2.2) * seg(u, .35, .6) * (1 - u);
-    const c = s < .12 ? mix2(POP_FROM, top, easeOut(s / .12)) : add2(arcPt(top, landC, 112, lerp(u, easeOut(u), .25)), [sway, 0]);
-    return { c, s: SNAIL.slipS * lerp(.5, 1, backOut(seg(s, 0, .2))), rot: -TAU * ease(seg(u, 0, .8)) + .25 * Math.sin(u * 13) * seg(u, .45, .7) * (1 - u), flutter: seg(u, .45, .85) * (1 - seg(u, .85, 1)) };
+    const c = s < .12 ? mix2(POP_FROM, top, easeOut(s / .12)) : add2(arcPt(top, land.c, 112, lerp(u, easeOut(u), .25)), [sway, 0]);
+    const rot = -TAU * ease(seg(u, 0, .8)) + land.rot * ease(seg(u, .5, 1)) + .25 * Math.sin(u * 13) * seg(u, .45, .7) * (1 - u);
+    return { c, s: SNAIL.slipS * lerp(.5, 1, backOut(seg(s, 0, .2))), rot, flutter: seg(u, .45, .85) * (1 - seg(u, .85, 1)) };
   }
   function drawSlipFlight(t) {
     if (t < AT.slipPop || t >= AT.slipLand) return;
-    const F = slipFlight(t, slipOnShell(snailState(AT.slipLand)).c);
-    drawRoll(F.c, F.s, { rot: F.rot, flutter: F.flutter });
+    const F = slipFlight(t, slipOnShell(snailState(AT.slipLand)));
+    drawSlip(F.c, F.s, { rot: F.rot, flutter: F.flutter });
     ticks(t, AT.slipPop, [POP_FROM[0], POP_FROM[1] - 12], 5, 22, 10, 'slip pop', .16, -Math.PI / 2, 2.0);
   }
 
@@ -239,7 +244,7 @@
     if (t >= AT.turn && t < AT.turn + .5) poof(o.x + 30, o.y - 6, .32, t - AT.turn - .04, { key: 'intro snail turn', life: .4 });
     if (t >= AT.slipLand) {
       const R = slipOnShell(o), land = spring(t, AT.slipLand, 10, 30);
-      drawRoll(R.c, SNAIL.slipS, { rot: R.rot, sx: R.sx + .12 * land, sy: R.sy - .18 * land });
+      drawSlip(R.c, SNAIL.slipS, { rot: R.rot, sx: R.sx + .12 * land, sy: R.sy - .18 * land });
     }
     if (o.x < X_PORT + 80) SETS.portholeFront();
     portholePop(t, o);
