@@ -41,6 +41,15 @@ export function glockNote(midi, vel, rng) {
   return scale(x, vel * 0.8);
 }
 
+export function musicBoxNote(midi, vel, rng) {
+  const hz = midiHz(midi), T = clamp(2.3 - (midi - 72) * 0.07, 0.7, 2.3), n = toSamples(T + 0.12);
+  const x = partials(n, hz, [[1, 1, T], [1.0017, 0.4, T * 0.8], [2, 0.12, T * 0.35], [3, 0.04, T * 0.2], [6.27, 0.25 + 0.2 * vel, T * 0.1]]);
+  addInto(x, noiseBurst(0.006, rng, 4200, 1.3, 0.0012), 0, 0.07);
+  addInto(x, partials(toSamples(0.08), 1, [[360, 1, 0.04], [930, 0.35, 0.025]]), 0, 0.03);
+  fadeEdges(x, 0.0008, 0.08);
+  return scale(x, vel * 0.8);
+}
+
 export function marimbaNote(midi, vel, rng) {
   const hz = midiHz(midi), T = clamp(1.6 - (midi - 48) * 0.035, 0.35, 1.6), n = toSamples(T + 0.12);
   const bright = 0.1 + 0.14 * vel;

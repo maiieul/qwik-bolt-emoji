@@ -55,17 +55,17 @@ export const SECTIONS = [
   [64, 'final chord and fade'],
 ];
 
-export function chordAt(t) {
-  let name = CHART[0][1];
-  for (const [at, chord] of CHART) {
+export function chordAt(t, chart = CHART) {
+  let name = chart[0][1];
+  for (const [at, chord] of chart) {
     if (at > t + 1e-6) break;
     name = chord;
   }
   return name;
 }
 
-export function snapToChord(hz, t) {
-  const target = hzMidi(hz), tones = VOICINGS[chordAt(t)].tones;
+export function snapToChord(hz, t, chart) {
+  const target = hzMidi(hz), tones = VOICINGS[chordAt(t, chart)].tones;
   let best = null;
   for (let octave = 0; octave <= 10; octave++) {
     for (const pc of tones) {
@@ -76,8 +76,8 @@ export function snapToChord(hz, t) {
   return midiHz(best);
 }
 
-export function chordTonesBetween(t, loHz, hiHz) {
-  const tones = VOICINGS[chordAt(t)].tones, out = [];
+export function chordTonesBetween(t, loHz, hiHz, chart) {
+  const tones = VOICINGS[chordAt(t, chart)].tones, out = [];
   for (let m = Math.ceil(hzMidi(loHz)); m <= Math.floor(hzMidi(hiHz)); m++) if (tones.includes(((m % 12) + 12) % 12)) out.push(midiHz(m));
   return out;
 }

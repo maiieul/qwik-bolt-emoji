@@ -6,31 +6,31 @@ import {
 export const LEVELS = { big: -16, medium: -19, small: -24, tiny: -28 };
 export const DUCK_WEIGHTS = { big: 1, medium: 1, small: 0.4, tiny: 0 };
 
-const len = seconds => toSamples(seconds);
+export const len = seconds => toSamples(seconds);
 const silent = seconds => new Float32Array(len(seconds));
 const shape = (seconds, points) => curve(len(seconds), points);
-const decay = (seconds, tau, attack = 0.0005) => track(len(seconds), t => cosRamp(t / attack) * Math.exp(-t / tau) * cosRamp((seconds - t) / 0.005));
+export const decay = (seconds, tau, attack = 0.0005) => track(len(seconds), t => cosRamp(t / attack) * Math.exp(-t / tau) * cosRamp((seconds - t) / 0.005));
 const series = (seconds, spec) => (typeof spec === 'number' || ArrayBuffer.isView(spec) ? spec : typeof spec === 'function' ? track(len(seconds), spec) : shape(seconds, spec));
 const envOf = (seconds, spec) => (Array.isArray(spec) ? shape(seconds, spec) : spec);
 
-function band(seconds, rng, fc, q, envelope, mode = 'bp') {
+export function band(seconds, rng, fc, q, envelope, mode = 'bp') {
   const shaped = svf(whiteNoise(len(seconds), rng), series(seconds, fc), q, mode);
   return multiply(svf(svf(shaped, 7000, 0.7, 'lp'), 7000, 0.7, 'lp'), envOf(seconds, envelope));
 }
-function tone(seconds, freq, amps, envelope, options) {
+export function tone(seconds, freq, amps, envelope, options) {
   return multiply(partials(len(seconds), series(seconds, freq), harmonics(amps), options), envOf(seconds, envelope));
 }
-function modal(seconds, modes, attack = 0.0003) {
+export function modal(seconds, modes, attack = 0.0003) {
   return fadeEdges(partials(len(seconds), 1, modes), attack, Math.min(0.02, seconds / 4));
 }
-function ping(hz, seconds = 0.6, t60 = 0.45, bright = 0.15) {
+export function ping(hz, seconds = 0.6, t60 = 0.45, bright = 0.15) {
   return fadeEdges(partials(len(seconds), hz, [[1, 1, t60], [2.76, bright, t60 / 3.5]]), 0.0005, 0.05);
 }
-function wobble(seconds, rng, hz) {
+export function wobble(seconds, rng, hz) {
   const x = onePoleLowpass(onePoleLowpass(whiteNoise(len(seconds), rng), hz), hz);
   return scale(x, 1 / (peak(x) || 1));
 }
-function mix(...layers) {
+export function mix(...layers) {
   const out = new Float32Array(Math.max(...layers.map(([x, at = 0]) => x.length + len(at))));
   for (const [x, at = 0, gain = 1] of layers) addInto(out, x, len(at), gain);
   return out;
@@ -40,21 +40,21 @@ function placed(seconds, layers) {
   for (const [x, at = 0, gain = 1, pan = 0] of layers) mixMono(out, x, len(at), gain, Array.isArray(pan) ? shape(x.length / SR, pan) : pan);
   return out;
 }
-const solo = (seconds, x, pan = 0) => placed(seconds, [[x, 0, 1, pan]]);
+export const solo = (seconds, x, pan = 0) => placed(seconds, [[x, 0, 1, pan]]);
 
-function pop(hz, rng, size = 1) {
+export function pop(hz, rng, size = 1) {
   const body = tone(0.28, t => hz * (1 + 1.6 * Math.exp(-t / 0.012)), [1, 0.25], decay(0.28, 0.05 * size));
   return fadeEdges(mix([body], [band(0.01, rng, 2500, 1.2, decay(0.01, 0.002)), 0, 0.3]), 0.0005, 0.03);
 }
 function slapSound(rng) {
   return mix([band(0.12, rng, 1400, 1.1, decay(0.12, 0.025, 0.0008))], [tone(0.15, 140, [1, 0.2], decay(0.15, 0.045, 0.001)), 0, 0.8]);
 }
-function microClicks(seconds, rng, count, hz, from, to, amp = 0.4) {
+export function microClicks(seconds, rng, count, hz, from, to, amp = 0.4) {
   const out = silent(seconds);
   for (let k = 0; k < count; k++) addInto(out, band(0.004, rng, hz * (0.8 + 0.4 * rng()), 2, decay(0.004, 0.001)), len(from + (to - from) * rng()), amp * (0.5 + 0.5 * rng()));
   return out;
 }
-function squish(rng) {
+export function squish(rng) {
   const s = 0.7, body = band(s, rng, t => 700 + 200 * Math.sin(TAU * 3 * t), 3, [[0, 0], [0.2, 0.5], [0.5, 0.4], [0.7, 0]]);
   const w = wobble(s, rng, 12);
   for (let i = 0; i < body.length; i++) body[i] *= 1 + 0.5 * w[i];

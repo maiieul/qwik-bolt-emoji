@@ -1,16 +1,19 @@
 # Soundtrack
 
-The music and sound effects for the 66 s JavaScript streaming video, made from code in plain Node. There are no samples
-and no new dependencies: `ffmpeg-static` and `sharp` are only used by the checks. Every random choice comes from a fixed
-seed, so two builds give the same bytes.
+The music and sound effects for the 76 s JavaScript streaming video (a 10 s intro, then the 66 s film), made from code
+in plain Node. There are no samples and no new dependencies: `ffmpeg-static` and `sharp` are only used by the checks.
+Every random choice comes from a fixed seed, so two builds give the same bytes.
 
 ## Build
 
 ```sh
-node audio/make.mjs            # about 6 s
+node audio/make.mjs            # the film, about 6 s
 node audio/make.mjs --report   # also prints each cue's level against the music, and the duck
+node audio/intro.mjs           # the intro and the 76 s file, about 2 s; reads assets/soundtrack.wav
 node audio/verify.mjs          # checks the files, writes pictures to out/audio/
 ```
+
+`npm run audio` runs all three.
 
 `make.mjs` writes three 44.1 kHz, 24-bit stereo WAV files, each exactly 66.0 s (2,910,600 frames):
 
@@ -21,21 +24,26 @@ node audio/verify.mjs          # checks the files, writes pictures to out/audio/
 | `assets/sfx_only.wav` | the effects as they sit in the mix |
 
 The two stems add up to the mix (to within the dither), so you can rebalance them in an editor and keep the master.
+`intro.mjs` then writes `assets/intro.wav` (10.0 s) and `assets/soundtrack_full.wav` (76.0 s, the intro then the film);
+see [Intro](#intro).
 
-To put the sound on the video, run `node render.mjs --encode --audio=assets/soundtrack.wav`, or set
-`audio: 'assets/soundtrack.wav'` in `PROJECT` (`src/config.js`) so `--clip` picks it up.
+The video uses `assets/soundtrack_full.wav`: `PROJECT.audio` in `src/config.js` points at it, so `render.mjs --clip` and
+`npm run export` pick it up. `node render.mjs --encode` needs `--audio=assets/soundtrack_full.wav`.
 
 ## Files
 
 | file | role |
 |---|---|
-| `dsp.mjs` | additive oscillators (partials fade out between 6 and 8.5 kHz, so nothing aliases), Karplus-Strong pluck with fractional-delay tuning, noise, state-variable and biquad filters, stereo reverb (Freeverb), compressor, 4× oversampled true-peak limiter, BS.1770 loudness meter, WAV reader and writer |
-| `instruments.mjs` | ukulele string, pizzicato, glockenspiel, marimba, round bass, pad, kick, finger snap, brushes, shaker, woodblock |
+| `dsp.mjs` | additive oscillators (partials fade out between 6 and 8.5 kHz, so nothing aliases), Karplus-Strong pluck with fractional-delay tuning, noise, state-variable and biquad filters, stereo reverb (Freeverb), compressor, 4× oversampled true-peak limiter, BS.1770 loudness meter, a moving delay and a resampler, WAV reader and writer |
+| `instruments.mjs` | ukulele string, pizzicato, glockenspiel, music box, marimba, round bass, pad, kick, finger snap, brushes, shaker, woodblock |
 | `score.mjs` | the chord chart (`CHART`), the sections, the parts, and the music mix (`BUSES`) |
 | `sfx.mjs` | the 75 effects (`EFFECTS`) and their levels |
-| `mix.mjs` | places the cues, ducks the music, masters the three files |
+| `mix.mjs` | places the cues (and expands repeating ones), ducks the music, masters the files |
 | `cues.json` | the cue list |
-| `make.mjs`, `verify.mjs` | build and checks |
+| `intro_score.mjs` | the intro's chord chart (`INTRO_CHART`), sections, hold music, droop and room tone |
+| `intro_sfx.mjs` | the intro's 16 effects (`INTRO_EFFECTS`), which also holds every film effect |
+| `intro_cues.json` | the intro's cue list |
+| `make.mjs`, `intro.mjs`, `verify.mjs` | build the film, build the intro and join it to the film, check both |
 
 ## Retiming cues
 
@@ -198,6 +206,79 @@ To change the music, edit `CHART` and the section functions in `score.mjs`. Each
   oversampled, ceiling −2 dBTP) inside a gain search that lands on −16 LUFS. The limiter acts on about 1.2 s of the film,
   by 2 dB at most.
 
+## Intro
+
+A first visit on a very slow network, before the title (`STORYBOARD.md`, "0 · Intro"). Story times run from −10 to 0;
+video time is story time + 10. `intro.mjs` renders the intro 1 s past the join, masters it like the film, and writes:
+
+| file | what it holds |
+|---|---|
+| `assets/intro.wav` | the intro alone, exactly 10.0 s (441,000 frames), in the film's format |
+| `assets/soundtrack_full.wav` | 76.0 s: `intro.wav`, then `soundtrack.wav` byte for byte, except in the film's first second, where `intro.mjs` adds the intro's tail (the last chord's release, reverb, the end of the push-in) |
+
+`intro.mjs` only reads `soundtrack.wav`, so the film stays exactly as `make.mjs` wrote it. Run `make.mjs` first.
+
+### Retiming the intro
+
+`intro_cues.json` works like `cues.json`, with negative story times. A cue can also repeat:
+`{ "t": -5, "name": "clockTick", "gain": [0.9, 0.75], "every": 0.5, "until": -3 }` plays at −5, −4.5, −4 and −3.5
+(`until` itself is left out), and a `gain` list cycles over the repeats. Each repeat gets its number `k`: the clock
+alternates tick (D6) and tock (G5), the finger drums alternate a four-finger roll and a two-finger tap, and the snail's
+squishes move left.
+
+- `fingerDrum` starts 0.125 s before `t`, so its last tap lands on `t`. The other intro effects start at `t`.
+- The key clacks are evenly spaced, one per letter of "boltplush.shop": move each to the frame where its letter appears.
+- The music keeps to the bar grid and does not follow the cues, with one exception: the droop snaps back on the
+  `clockWhizz` cue.
+- Intro cues can name any film effect too (`click` and `clockWhizz` do).
+- After an edit, run `npm run audio`.
+
+| effect | length (s) | lead-in (s) | level | cues (s) |
+|---|---|---|---|---|
+| `handGlide` | 0.6 |  | small | −9.6 |
+| `click` (the film's) | 0.15 |  | medium | −9 |
+| `barGlow` | 0.6 |  | tiny | −9 |
+| `keyClack` | 0.12 |  | small | 14 cues, −8.5 to −7.6 |
+| `enterKey` | 0.45 |  | medium | −7 |
+| `spinnerTick` | 0.05 |  | tiny | every 0.25 from −7 to −0.75, louder off the beat, fading from −1.5 |
+| `slipPop`, `slipFlutter` | 0.35, 0.5 |  | medium, small | −6.9 |
+| `shellTap`, `snailWake` | 0.2, 0.5 |  | tiny, small | −6.4 |
+| `snailYawn` | 0.66 |  | small | −6.15 (the film's yawn, 1.3× higher and faster) |
+| `crawlSquish` | 0.7 |  | tiny | −5.5, −4.5, −3.5 |
+| `clockTick` | 0.2 |  | small, no duck | −5, −4.5, −4, −3.5 |
+| `fingerDrum` | 0.3 | 0.125 | small | −4.25, −3.75, −3.25, −2.75, between the clock's ticks |
+| `clockWhizz` (the film's) | 0.6 |  | small | −3 |
+| `portholeSqueeze` | 0.55 |  | medium | −2.5 |
+| `portholePop` | 0.45 |  | medium | −2 |
+| `pushIn` | 1.6 |  | medium, ducks a quarter | −1.5 (loudest at −0.03, gone by +0.06) |
+
+### Intro music
+
+The same grid (120 BPM, bars at −10, −8, −6, −4 and −2) and C major. A music box plays the film's tune at half speed
+over a soft pad: sleepy hold music. A round bass joins at −8, and a soft room tone runs under it all until the camera
+reaches the paper (−0.3).
+
+| time (s) | chords | what the music does |
+|---|---|---|
+| −10 to −6 | C, Am | the music box plays C E G, A G E (do mi sol, la sol mi) at half speed |
+| −6 to −5 | F | the answer starts: F E D |
+| −5 to −3 | G | the droop: the music sags like a tape running down (110 cents flat by −3, with a slow wobble) and gets 4 dB quieter; E D, and the closing C never comes |
+| −3 to −2 | Dm7 | on the clock whizz the music whoops back up to pitch and fades out in 0.4 s; a soft Dm pad from −2.75 under the squeeze |
+| −2 to 0 | G | the rise: a G pad swells, the bass and a music-box G come in at −1.5, then a G arpeggio climbs in sixteenths from −1 to −0.25; the G chord rings on into the film's C pad |
+
+To change the music, edit `composeIntro` and `INTRO_CHART` in `intro_score.mjs`; `DROOP` sets the droop's depth,
+wobble, quietening and fade.
+
+### Intro mix and master
+
+- As in the film: each effect at its level, the music ducking under the effects, the same master EQ and true-peak
+  limiter (ceiling −2 dBTP).
+- The gain search lands the intro on −17.5 LUFS integrated (`INTRO_LUFS` in `intro.mjs`), with a master gain of 5.8 dB
+  (the film's is 4.2 dB). The limiter acts on 0.23 s of the intro, by 0.9 dB at most.
+- The rise lands on the film's level: −16.3 LUFS momentary over the intro's last second, −15.9 LUFS over the film's
+  first, and the short-term loudness runs on with no step.
+- The tail mixed into the film's first second stays at least 9 LU under the film.
+
 ## What verify.mjs checks
 
 On the last build:
@@ -215,8 +296,20 @@ On the last build:
 | clicks | every sharp high-band transient lines up with a scheduled note or cue |
 | beat | all 148 music onsets sit on the 120 BPM grid (sixteenths, triplets or rolls) within 20 ms |
 | harmony | 98% of spectral peak energy within 15 cents of a semitone, 99% on C major scale tones |
+| intro files | `intro.wav` 10.0000 s and `soundtrack_full.wav` 76.0000 s, both 44.1 kHz, 24-bit stereo |
+| join | `soundtrack_full.wav` is `intro.wav` then `soundtrack.wav`, byte for byte past the film's first 1.000 s; the tail there peaks at −10.6 dBFS, at least 9.4 LU under the film |
+| ffmpeg `ebur128`, intro | `soundtrack_full.wav` −16.2 LUFS, true peak −2.0 dBTP, LRA 4.6 LU; `intro.wav` −17.5 LUFS, true peak −2.0 dBTP |
+| loudness across the join | −16.3 LUFS momentary over the intro's last second, −15.9 LUFS over the film's first; it prints the 400 ms values from −2 to +2 s |
+| ffmpeg `astats`, intro | DC offset under 0.00001, no clipped runs, peak −2.0 dBFS in both files |
+| clicks at the join | no sharp high-band transient within 30 ms of the join; the sample step there is smaller than the largest within 10 ms |
+| intro timing | all 28 intro hits have an onset within 25 ms (the intro's effects rendered alone); no onset above −40 dBFS outside a cue |
+| intro harmony | outside the droop (−5 to −2.6), 99% of the intro music's spectral peak energy within 15 cents of a semitone, 99.7% on C major scale tones |
+| intro tone | prints the band shares and spectral centroid against the film's first 6 s; energy above 8 kHz is 44.6 dB below the whole |
 
 It also prints each section's mean loudness, onset rate and brightness, and writes these pictures to `out/audio/`:
 `spectrum_linear.png`, `spectrum_log.png` (ffmpeg `showspectrumpic`), `waves_soundtrack.png`, `waves_music.png`,
 `waves_sfx.png` (`showwavespic`), and `annotated.png`: a spectrogram with the cue times on top, the section lines, and
 the music and effect loudness over time.
+For the intro it writes `intro_spectrum.png`, `intro_waves.png`, `intro_join_spectrum.png` (−4 to +4 s),
+`intro_join_waves.png` (−1 to +1 s), `intro_full_waves.png` (all 76 s) and `intro_annotated.png` (−10 to +4 s: the
+spectrogram, cue ticks, and the momentary loudness of `soundtrack_full.wav` and of the film alone).

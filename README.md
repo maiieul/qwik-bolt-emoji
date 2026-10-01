@@ -24,7 +24,7 @@ writes `out/qwik-javascript-streaming-1080p.mp4` and `out/qwik-javascript-stream
 
 | command | what it does |
 |---|---|
-| `npm run audio` | builds `assets/soundtrack.wav` from `audio/` and checks it |
+| `npm run audio` | builds the film's `assets/soundtrack.wav`, the intro and the full `assets/soundtrack_full.wav` from `audio/`, and checks them |
 | `npm run frames` | renders every frame into `out/frames/` (resumable) |
 | `npm run export` | encodes the frames and the soundtrack into the two MP4 files |
 | `node render.mjs --sheet=12,12.5,13 --out=out/check/a.jpg` | a contact sheet of chosen times (see the top of `render.mjs` for strips, crops and stills) |

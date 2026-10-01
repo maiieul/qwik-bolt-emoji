@@ -15,7 +15,8 @@ Read `README.md`, then `STORYBOARD.md` before touching any scene. The animation 
 - Use `RIG.feel()` / `RIG.emotions()` for Bolt's moods; plain `boltFeel()` leaves the long arms in a T-pose.
 - The meaning table in `STORYBOARD.md` is a contract: never show anything that reads as hydration, or the network
   getting faster for the clicked code.
-- When a picture moves in time, move its sound cue in `audio/cues.json` and run `npm run audio`.
+- When a picture moves in time, move its sound cue in `audio/cues.json` (the intro's in `audio/intro_cues.json`) and
+  run `npm run audio`.
 
 ## Verify
 

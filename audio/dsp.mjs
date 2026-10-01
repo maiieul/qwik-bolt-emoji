@@ -216,6 +216,24 @@ export function onePoleLowpass(x, hz) {
   return x;
 }
 
+function cubicAt(x, pos) {
+  const j = Math.floor(pos), f = pos - j;
+  const xm1 = x[j - 1] ?? 0, x0 = x[j] ?? 0, x1 = x[j + 1] ?? 0, x2 = x[j + 2] ?? 0;
+  return x0 + 0.5 * f * (x1 - xm1 + f * (2 * xm1 - 5 * x0 + 4 * x1 - x2 + f * (3 * (x0 - x1) + x2 - xm1)));
+}
+
+export function varDelay(x, delaySeconds) {
+  const out = new Float32Array(x.length);
+  for (let i = 0; i < x.length; i++) out[i] = cubicAt(x, i - delaySeconds[i] * SR);
+  return out;
+}
+
+export function resample(x, speed) {
+  const out = new Float32Array(Math.floor((x.length - 1) / speed) + 1);
+  for (let i = 0; i < out.length; i++) out[i] = cubicAt(x, i * speed);
+  return out;
+}
+
 export function biquad(type, f0, q = Math.SQRT1_2, gainDb = 0) {
   const w = TAU * f0 / SR, c = Math.cos(w), s = Math.sin(w), al = s / (2 * q), A = 10 ** (gainDb / 40), sq = 2 * Math.sqrt(A) * al;
   let b0, b1, b2, a0, a1, a2;
@@ -415,21 +433,29 @@ export function limiterGain(L, R, { ceilingDb = -2, kneeDb = 1.5, lookahead = 0.
   return gain;
 }
 
+export const FULL_SCALE_24 = 8388607;
+
+export function wavHeader24(frames) {
+  const header = Buffer.alloc(44);
+  header.write('RIFF', 0);
+  header.writeUInt32LE(36 + frames * 6, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(2, 22);
+  header.writeUInt32LE(SR, 24);
+  header.writeUInt32LE(SR * 6, 28);
+  header.writeUInt16LE(6, 32);
+  header.writeUInt16LE(24, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(frames * 6, 40);
+  return header;
+}
+
 export function writeWav24(path, L, R, seed = 1) {
-  const n = L.length, data = Buffer.alloc(44 + n * 6), rng = makeRng(seed), full = 8388607;
-  data.write('RIFF', 0);
-  data.writeUInt32LE(36 + n * 6, 4);
-  data.write('WAVE', 8);
-  data.write('fmt ', 12);
-  data.writeUInt32LE(16, 16);
-  data.writeUInt16LE(1, 20);
-  data.writeUInt16LE(2, 22);
-  data.writeUInt32LE(SR, 24);
-  data.writeUInt32LE(SR * 6, 28);
-  data.writeUInt16LE(6, 32);
-  data.writeUInt16LE(24, 34);
-  data.write('data', 36);
-  data.writeUInt32LE(n * 6, 40);
+  const n = L.length, data = Buffer.alloc(44 + n * 6), rng = makeRng(seed), full = FULL_SCALE_24;
+  wavHeader24(n).copy(data, 0);
   const quantize = v => Math.max(-8388608, Math.min(full, Math.round(v * full + rng() - rng())));
   for (let i = 0; i < n; i++) {
     data.writeIntLE(quantize(L[i]), 44 + i * 6, 3);

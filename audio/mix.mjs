@@ -10,24 +10,36 @@ const PEAK_CAP_DB = -9;
 export function effectLevel(effect) {
   return typeof effect.level === 'number' ? effect.level : LEVELS[effect.level];
 }
-const duckWeight = effect => (typeof effect.level === 'number' ? DUCK_WEIGHTS.small : DUCK_WEIGHTS[effect.level]);
+const duckWeight = effect => effect.duck ?? (typeof effect.level === 'number' ? DUCK_WEIGHTS.small : DUCK_WEIGHTS[effect.level]);
 
-export function renderSfx(cues, seconds) {
+export function expandCues(cues) {
+  return cues.flatMap(cue => {
+    if (cue.every === undefined) return [cue];
+    const { every, until, gain = 1, ...rest } = cue, gains = [gain].flat(), repeats = [];
+    for (let k = 0; cue.t + k * every < until - 1e-6; k++) {
+      repeats.push({ ...rest, t: Math.round((cue.t + k * every) * 1e6) / 1e6, gain: gains[k % gains.length], k });
+    }
+    return repeats;
+  });
+}
+
+export function renderSfx(cues, seconds, { effects = EFFECTS, origin = 0, chart, source = 'cues.json' } = {}) {
   const n = toSamples(seconds), dry = stereo(n), send = stereo(n), sidechain = stereo(n), placed = [];
-  for (const cue of cues) {
-    const effect = EFFECTS[cue.name];
-    if (!effect) throw new Error(`cues.json: unknown effect "${cue.name}" at ${cue.t} s (known: ${Object.keys(EFFECTS).join(', ')})`);
+  for (const cue of expandCues(cues)) {
+    const effect = effects[cue.name];
+    if (!effect) throw new Error(`${source}: unknown effect "${cue.name}" at ${cue.t} s (known: ${Object.keys(effects).join(', ')})`);
     const buf = effect.render({
       t: cue.t,
+      k: cue.k ?? 0,
       rng: makeRng(seedFrom('cue', cue.name, cue.t)),
-      snap: hz => snapToChord(hz, cue.t),
-      tones: (lo, hi) => chordTonesBetween(cue.t, lo, hi),
+      snap: hz => snapToChord(hz, cue.t, chart),
+      tones: (lo, hi) => chordTonesBetween(cue.t, lo, hi, chart),
     });
     if (buf.L.length > toSamples(effect.dur + 0.001)) throw new Error(`effect "${cue.name}" renders ${(buf.L.length / SR).toFixed(3)} s, longer than its dur ${effect.dur}`);
     const byLoudness = dbToGain(effectLevel(effect) - maxLoudness(buf.L, buf.R, 0.1));
     const byPeak = dbToGain(PEAK_CAP_DB) / Math.max(peak(buf.L), peak(buf.R));
     const gain = Math.min(byLoudness, byPeak) * (cue.gain ?? 1);
-    const start = toSamples(cue.t - (effect.anchor ?? 0));
+    const start = toSamples(cue.t - origin - (effect.anchor ?? 0));
     mixStereo(dry, buf, start, gain);
     mixStereo(send, buf, start, gain * (effect.send ?? 0.1));
     mixStereo(sidechain, buf, start, gain * duckWeight(effect));

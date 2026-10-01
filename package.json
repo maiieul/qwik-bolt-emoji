@@ -13,7 +13,7 @@
     "sharp": "^0.35.4"
   },
   "scripts": {
-    "audio": "node audio/make.mjs && node audio/verify.mjs",
+    "audio": "node audio/make.mjs && node audio/intro.mjs && node audio/verify.mjs",
     "frames": "node render.mjs --frames --workers=5",
     "export": "node tools/export.mjs",
     "video": "npm run audio && npm run frames && npm run export"
