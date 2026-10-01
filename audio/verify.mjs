@@ -321,7 +321,7 @@ const nearbyStep = Math.max(...fullWav.channels.map(x => {
 check(nearJoin.length === 0 && joinStep <= nearbyStep, `join: ${nearJoin.length} sharp high-band transients within 30 ms; sample step ${gainToDb(joinStep).toFixed(1)} dBFS, largest within 10 ms ${gainToDb(nearbyStep).toFixed(1)} dBFS`);
 
 console.log('— intro: effect timing (the effects rendered alone) and tone (intro.wav)');
-const introGradual = new Set([...gradualOnsets, 'handGlide', 'barGlow', 'slipFlutter', 'snailYawn', 'crawlSquish', 'portholeSqueeze', 'pushIn', 'spinnerTick']);
+const introGradual = new Set([...gradualOnsets, 'handGlide', 'barGlow', 'slipFlutter', 'snailYawn', 'snailScoot', 'crawlSquish', 'snailDash', 'portholeSqueeze', 'pushIn', 'paperFade', 'spinnerTick']);
 const { bus: introSfx } = renderSfx(introCues, INTRO_SECONDS, { effects: INTRO_EFFECTS, origin: INTRO_START, chart: INTRO_CHART, source: 'intro_cues.json' });
 const introOnsets = onsets([introSfx.L, introSfx.R]).map(o => ({ ...o, t: o.t + INTRO_START }));
 const introTiming = hitsOffTime(introCues, introOnsets, introGradual);

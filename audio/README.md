@@ -41,7 +41,7 @@ The video uses `assets/soundtrack_full.wav`: `PROJECT.audio` in `src/config.js` 
 | `mix.mjs` | places the cues (and expands repeating ones), ducks the music, masters the files |
 | `cues.json` | the cue list |
 | `intro_score.mjs` | the intro's chord chart (`INTRO_CHART`), sections, hold music, droop and room tone |
-| `intro_sfx.mjs` | the intro's 16 effects (`INTRO_EFFECTS`), which also holds every film effect |
+| `intro_sfx.mjs` | the intro's 20 effects (`INTRO_EFFECTS`), which also holds every film effect |
 | `intro_cues.json` | the intro's cue list |
 | `make.mjs`, `intro.mjs`, `verify.mjs` | build the film, build the intro and join it to the film, check both |
 
@@ -214,7 +214,7 @@ video time is story time + 10. `intro.mjs` renders the intro 1 s past the join, 
 | file | what it holds |
 |---|---|
 | `assets/intro.wav` | the intro alone, exactly 10.0 s (441,000 frames), in the film's format |
-| `assets/soundtrack_full.wav` | 76.0 s: `intro.wav`, then `soundtrack.wav` byte for byte, except in the film's first second, where `intro.mjs` adds the intro's tail (the last chord's release, reverb, the end of the push-in) |
+| `assets/soundtrack_full.wav` | 76.0 s: `intro.wav`, then `soundtrack.wav` byte for byte, except in the film's first second, where `intro.mjs` adds the intro's tail (the last chord's release and reverb) |
 
 `intro.mjs` only reads `soundtrack.wav`, so the film stays exactly as `make.mjs` wrote it. Run `make.mjs` first.
 
@@ -223,11 +223,13 @@ video time is story time + 10. `intro.mjs` renders the intro 1 s past the join, 
 `intro_cues.json` works like `cues.json`, with negative story times. A cue can also repeat:
 `{ "t": -5, "name": "clockTick", "gain": [0.9, 0.75], "every": 0.5, "until": -3 }` plays at −5, −4.5, −4 and −3.5
 (`until` itself is left out), and a `gain` list cycles over the repeats. Each repeat gets its number `k`: the clock
-alternates tick (D6) and tock (G5), the finger drums alternate a four-finger roll and a two-finger tap, and the snail's
-squishes move left.
+alternates tick (D6) and tock (G5), and the spinner alternates two pitches.
 
-- `fingerDrum` starts 0.125 s before `t`, so its last tap lands on `t`. The other intro effects start at `t`.
-- The key clacks are evenly spaced, one per letter of "boltplush.shop": move each to the frame where its letter appears.
+- Each cue sits on its event in the picture (`AT`, `LETTER_AT` and the camera keys in `src/scenes/intro.js`), within a
+  frame.
+- `fingerDrum` starts 0.16 s before `t` and taps pinky, ring, then middle on `t`, as the hand does. `crawlSquish`
+  starts 0.2 s before `t`, so it swells on the snail's stride. The other intro effects start at `t`.
+- The key clacks sit on the frames where their letters appear; the second letter of each pair is softer.
 - The music keeps to the bar grid and does not follow the cues, with one exception: the droop snaps back on the
   `clockWhizz` cue.
 - Intro cues can name any film effect too (`click` and `clockWhizz` do).
@@ -235,28 +237,34 @@ squishes move left.
 
 | effect | length (s) | lead-in (s) | level | cues (s) |
 |---|---|---|---|---|
-| `handGlide` | 0.6 |  | small | −9.6 |
+| `handGlide` | 0.6 |  | small | −9.62, the hand sets off; it settles at −9.12 |
 | `click` (the film's) | 0.15 |  | medium | −9 |
-| `barGlow` | 0.6 |  | tiny | −9 |
-| `keyClack` | 0.12 |  | small | 14 cues, −8.5 to −7.6 |
+| `barGlow` | 0.6 |  | tiny | −9, the focus ring |
+| `keyClack` | 0.12 |  | small | 14 cues, −8.5 to −7.583, one per letter |
 | `enterKey` | 0.45 |  | medium | −7 |
-| `spinnerTick` | 0.05 |  | tiny | every 0.25 from −7 to −0.75, louder off the beat, fading from −1.5 |
-| `slipPop`, `slipFlutter` | 0.35, 0.5 |  | medium, small | −6.9 |
-| `shellTap`, `snailWake` | 0.2, 0.5 |  | tiny, small | −6.4 |
-| `snailYawn` | 0.66 |  | small | −6.15 (the film's yawn, 1.3× higher and faster) |
-| `crawlSquish` | 0.7 |  | tiny | −5.5, −4.5, −3.5 |
+| `spinnerTick` | 0.05 |  | tiny | every 0.25 from −7 to −0.75, louder off the beat; a soft last one at −0.5, as the page turns to paper |
+| `slipPop` | 0.35 |  | medium | −6.5, the slip pops out of the address |
+| `slipFlutter` | 0.5 |  | small | −6.44, the tumble; the slip lands at −6 |
+| `shellTap` | 0.2 |  | tiny | −6, the landing on the shell |
+| `snailWake` | 0.2 |  | small | −5.96, the "!": two eye-stalk boinks |
+| `snailYawn` | 0.42 |  | small | −5.72, the film's yawn 1.35× higher and faster, loudest with the widest mouth (−5.56), cut as the mouth closes |
+| `snailTurn` | 0.45 |  | tiny | −5.3: squash, flip (−5.25), dust puff |
+| `snailScoot` | 0.36 |  | small | −5.2, a squish at double speed, loudest on the stretch (−5.1) |
 | `clockTick` | 0.2 |  | small, no duck | −5, −4.5, −4, −3.5 |
-| `fingerDrum` | 0.3 | 0.125 | small | −4.25, −3.75, −3.25, −2.75, between the clock's ticks |
+| `fingerDrum` | 0.25 | 0.16 | small | −4.25, −3.75, −3.25, the rolls the hand plays on screen, between the clock's ticks |
+| `crawlSquish` | 0.7 | 0.2 | tiny | −4.15, −3.45 |
 | `clockWhizz` (the film's) | 0.6 |  | small | −3 |
-| `portholeSqueeze` | 0.55 |  | medium | −2.5 |
-| `portholePop` | 0.45 |  | medium | −2 |
-| `pushIn` | 1.6 |  | medium, ducks a quarter | −1.5 (loudest at −0.03, gone by +0.06) |
+| `snailDash` | 0.45 |  | small | −3, the dash and the camera's pan, loudest at −2.8 |
+| `portholeSqueeze` | 0.36 |  | medium | −2.6, the snail pushes in; it wobbles with the snail from −2.44 and stops on the pop |
+| `portholePop` | 0.55 |  | medium | −2.25: a pop, a poof and a zip off to the left |
+| `pushIn` | 1.45 |  | medium, ducks a quarter | −2, loudest with the camera (−1.2), gone by −0.6 |
+| `paperFade` | 0.5 |  | tiny | −0.58, the page turns to paper |
 
 ### Intro music
 
 The same grid (120 BPM, bars at −10, −8, −6, −4 and −2) and C major. A music box plays the film's tune at half speed
-over a soft pad: sleepy hold music. A round bass joins at −8, and a soft room tone runs under it all until the camera
-reaches the paper (−0.3).
+over a soft pad: sleepy hold music. A round bass joins at −8, and a soft room tone runs under it all until the page
+turns to paper (it fades from −0.58 to −0.25).
 
 | time (s) | chords | what the music does |
 |---|---|---|
@@ -264,7 +272,7 @@ reaches the paper (−0.3).
 | −6 to −5 | F | the answer starts: F E D |
 | −5 to −3 | G | the droop: the music sags like a tape running down (110 cents flat by −3, with a slow wobble) and gets 4 dB quieter; E D, and the closing C never comes |
 | −3 to −2 | Dm7 | on the clock whizz the music whoops back up to pitch and fades out in 0.4 s; a soft Dm pad from −2.75 under the squeeze |
-| −2 to 0 | G | the rise: a G pad swells, the bass and a music-box G come in at −1.5, then a G arpeggio climbs in sixteenths from −1 to −0.25; the G chord rings on into the film's C pad |
+| −2 to 0 | G | the rise: with the push-in, a G pad swells and the bass and a music-box G come in; a G arpeggio climbs in sixteenths from −1 and reaches its top as the page turns to paper (−0.25); the G chord rings on into the film's C pad |
 
 To change the music, edit `composeIntro` and `INTRO_CHART` in `intro_score.mjs`; `DROOP` sets the droop's depth,
 wobble, quietening and fade.
@@ -273,11 +281,12 @@ wobble, quietening and fade.
 
 - As in the film: each effect at its level, the music ducking under the effects, the same master EQ and true-peak
   limiter (ceiling −2 dBTP).
-- The gain search lands the intro on −17.5 LUFS integrated (`INTRO_LUFS` in `intro.mjs`), with a master gain of 5.8 dB
-  (the film's is 4.2 dB). The limiter acts on 0.23 s of the intro, by 0.9 dB at most.
-- The rise lands on the film's level: −16.3 LUFS momentary over the intro's last second, −15.9 LUFS over the film's
+- The gain search aims the intro's 11 s render at −17.5 LUFS (`INTRO_LUFS` in `intro.mjs`); `intro.wav` measures
+  −17.4 LUFS, with a master gain of 5.6 dB (the film's is 4.2 dB). The limiter acts on 0.03 s of the intro, by 0.6 dB
+  at most.
+- The rise lands near the film's level: −17.0 LUFS momentary over the intro's last second, −15.9 LUFS over the film's
   first, and the short-term loudness runs on with no step.
-- The tail mixed into the film's first second stays at least 9 LU under the film.
+- The tail mixed into the film's first second stays at least 10 LU under the film.
 
 ## What verify.mjs checks
 
@@ -297,14 +306,14 @@ On the last build:
 | beat | all 148 music onsets sit on the 120 BPM grid (sixteenths, triplets or rolls) within 20 ms |
 | harmony | 98% of spectral peak energy within 15 cents of a semitone, 99% on C major scale tones |
 | intro files | `intro.wav` 10.0000 s and `soundtrack_full.wav` 76.0000 s, both 44.1 kHz, 24-bit stereo |
-| join | `soundtrack_full.wav` is `intro.wav` then `soundtrack.wav`, byte for byte past the film's first 1.000 s; the tail there peaks at −10.6 dBFS, at least 9.4 LU under the film |
-| ffmpeg `ebur128`, intro | `soundtrack_full.wav` −16.2 LUFS, true peak −2.0 dBTP, LRA 4.6 LU; `intro.wav` −17.5 LUFS, true peak −2.0 dBTP |
-| loudness across the join | −16.3 LUFS momentary over the intro's last second, −15.9 LUFS over the film's first; it prints the 400 ms values from −2 to +2 s |
+| join | `soundtrack_full.wav` is `intro.wav` then `soundtrack.wav`, byte for byte past the film's first 1.000 s; the tail there peaks at −15.9 dBFS, at least 10.4 LU under the film |
+| ffmpeg `ebur128`, intro | `soundtrack_full.wav` −16.2 LUFS, true peak −2.0 dBTP, LRA 4.5 LU; `intro.wav` −17.4 LUFS, true peak −2.0 dBTP |
+| loudness across the join | −17.0 LUFS momentary over the intro's last second, −15.9 LUFS over the film's first; it prints the 400 ms values from −2 to +2 s |
 | ffmpeg `astats`, intro | DC offset under 0.00001, no clipped runs, peak −2.0 dBFS in both files |
 | clicks at the join | no sharp high-band transient within 30 ms of the join; the sample step there is smaller than the largest within 10 ms |
 | intro timing | all 28 intro hits have an onset within 25 ms (the intro's effects rendered alone); no onset above −40 dBFS outside a cue |
 | intro harmony | outside the droop (−5 to −2.6), 99% of the intro music's spectral peak energy within 15 cents of a semitone, 99.7% on C major scale tones |
-| intro tone | prints the band shares and spectral centroid against the film's first 6 s; energy above 8 kHz is 44.6 dB below the whole |
+| intro tone | prints the band shares and spectral centroid against the film's first 6 s; energy above 8 kHz is 41.4 dB below the whole |
 
 It also prints each section's mean loudness, onset rate and brightness, and writes these pictures to `out/audio/`:
 `spectrum_linear.png`, `spectrum_log.png` (ffmpeg `showspectrumpic`), `waves_soundtrack.png`, `waves_music.png`,

@@ -47,7 +47,7 @@ function composeIntro() {
   tune(-10, 'C5:1 E5:1 G5:2 A5:1 G5:1 E5:2', 0.5);
   tune(-6, 'F5:1 E5:1 D5:2', 0.44);
   tune(-4, 'E5:1 D5:1', 0.36);
-  box(-1.5, 'G5', 0.3);
+  box(-2, 'G5', 0.3);
   'G4 B4 D5 G5 B5 D6 G6'.split(' ').forEach((note, k) => box(-1 + k * BEAT / 4, note, 0.18 + 0.022 * k));
 
   pad(-10, ['C4', 'E4', 'G4'], 1.9, 0.4, { attack: 0.6, release: 0.6 });
@@ -57,7 +57,7 @@ function composeIntro() {
   pad(-2.75, ['A3', 'D4', 'F4'], 0.7, 0.3, { attack: 0.3, release: 0.35 });
   pad(-2, ['G3', 'B3', 'D4', 'G4'], 2, 0.3, { attack: 0.5, release: 0.6, swell: 1.4 });
 
-  [['A2', -8, 2], ['E2', -7, 2], ['F2', -6, 2], ['G2', -5, 4], ['G2', -1.5, 2]]
+  [['A2', -8, 2], ['E2', -7, 2], ['F2', -6, 2], ['G2', -5, 4], ['G2', -2, 3]]
     .forEach(([note, t, beats]) => bass(t, note, beats, 0.45));
   return ev;
 }
@@ -129,9 +129,9 @@ export function renderIntroMusic(seconds, { musicLufs = -25, whizzAt = -3 } = {}
   return music;
 }
 
-export function renderRoomTone(seconds, { lufs = -45, until = -0.3 } = {}) {
+export function renderRoomTone(seconds, { lufs = -45, fadeFrom = -0.58, until = -0.25 } = {}) {
   const n = toSamples(seconds), rng = makeRng(seedFrom('intro room tone')), out = stereo(n);
-  const env = curve(n, [[0, 0], [0.4, 1], [until - 1.3 - INTRO_START, 1], [until - INTRO_START, 0]]);
+  const env = curve(n, [[0, 0], [0.4, 1], [fadeFrom - INTRO_START, 1], [until - INTRO_START, 0]]);
   const drift = wobble(seconds, rng, 0.4);
   for (const side of ['L', 'R']) {
     const x = runBiquads(onePoleLowpass(onePoleLowpass(whiteNoise(n, rng), 1600), 1600), [biquad('hp', 90)]);

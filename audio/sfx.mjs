@@ -73,7 +73,7 @@ function clockWhizz(seconds, rng) {
   const whirr = band(seconds, rng, t => 900 + 1300 * speed(t), 2, track(n, t => 0.3 * speed(t)));
   return mix([fadeEdges(out, 0.001, 0.02)], [whirr]);
 }
-function zip(seconds, from, to, rng) {
+export function zip(seconds, from, to, rng) {
   const env = [[0, 0], [0.005, 0.7], [seconds * 0.6, 0.5], [seconds * 0.85, 0]];
   return mix(
     [tone(seconds, t => from * (to / from) ** clamp(t / (seconds * 0.7)), [1, 0.35, 0.12], env)],
