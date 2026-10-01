@@ -96,6 +96,7 @@
   }
   const RIDE_FACE = { eyes: 'wide', mouth: 'open', lookY: -1, lookX: 0, squint: 0 };
   const STRAIN = { eyes: 'squeeze', mouth: 'teeth', lookY: 0, squint: 0 };
+  const TUBE_FACE = [[17, 'excited', RIDE_FACE], [B_STUCK, 'determined', STRAIN]];
   function tubeBolt(t) {
     if (t >= B_GONE) return;
     const head = Math.min(rideHead(t), HEAD_X), len = rideLen(t);
@@ -105,9 +106,10 @@
     const tail = head - len, pel = pelvisFromTail([tail, WORLD.tubeY + 6], rot, kx, ky), [gx, gy] = groundFor(pel);
     if (t < B_STUCK) speedLines(tail - 6, WORLD.tubeY, 200, 1, 1, { spread: 34, key: 'bolt ride' });
     else if (t >= B_SLURP) speedLines(tail - 4, WORLD.tubeY + 4, 90 + 160 * seg(t, B_SLURP, B_GONE), 1, 1, { spread: 30, key: 'bolt slurp' });
-    const face = t < B_STUCK ? RIDE_FACE : STRAIN, impact = t - B_STUCK;
+    const f = RIG.emotions(t, TUBE_FACE), impact = t - B_STUCK;
     const shake = impact > 0 && impact < .14 ? 4 * Math.sin(impact * 130) * (1 - impact / .14) : 0;
-    qwik(gx, gy + shake, U, { ...RIG.feel('excited', t), ...face, dy: 0, sq: 0, dx: 0, lean: 0, rot, sx: kx, sy: ky, zap: 0, noLimbs: true, noShadow: true, emote: null, boilKey: 'bolt tube' });
+    qwik(gx, gy + shake, U, { ...RIG.feel('excited', t), eyes: f.eyes, mouth: f.mouth, squint: f.squint, lookX: f.lookX, lookY: f.lookY, blush: f.blush,
+      dy: 0, sq: 0, dx: 0, lean: 0, rot, sx: kx, sy: ky, zap: 0, noLimbs: true, noShadow: true, emote: null, boilKey: 'bolt tube' });
   }
 
   function nozzleBulge(t) {

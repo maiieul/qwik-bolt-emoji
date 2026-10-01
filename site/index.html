@@ -1,0 +1,111 @@
+<title>Qwik JavaScript Streaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Shantell+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: one column like a picture-book page; the film first, then the key to its pictures. */
+  :root {
+    --paper: #F3EBDC;
+    --sheet: #FBF6EC;
+    --ink: #2B2233;
+    --ink-soft: #5E5468;
+    --rule: #DCCFB8;
+    --purple: #7B55CF;
+    --blue: #1F7FC4;
+    --orange: #C85A22;
+    --display: "Permanent Marker", "Comic Sans MS", cursive;
+    --body: "Shantell Sans", "Trebuchet MS", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1A1C35; --sheet: #23264A; --ink: #F4ECDF; --ink-soft: #B9B0C8; --rule: #3A3D66;
+      --purple: #C2A6FF; --blue: #7FD0FA; --orange: #F29A62; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1A1C35; --sheet: #23264A; --ink: #F4ECDF; --ink-soft: #B9B0C8; --rule: #3A3D66;
+    --purple: #C2A6FF; --blue: #7FD0FA; --orange: #F29A62; color-scheme: dark;
+  }
+  body { background: var(--paper); color: var(--ink); font: 400 17px/1.6 var(--body); }
+  .page { max-width: 980px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 64px; display: grid; gap: 40px; }
+  header { display: grid; gap: 6px; }
+  .kicker { font: 600 13px/1 var(--body); letter-spacing: .12em; text-transform: uppercase; color: var(--purple); }
+  h1 { margin: 0; font: 400 clamp(38px, 7vw, 68px)/1.02 var(--display); color: var(--ink); text-wrap: balance; }
+  h1 .js { color: var(--blue); }
+  .lede { margin: 6px 0 0; max-width: 62ch; color: var(--ink-soft); }
+  .film { display: grid; gap: 10px; }
+  video { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 6px; box-shadow: 0 2px 0 var(--rule), 0 18px 40px -24px rgba(20, 16, 40, .55); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 400 13px/1.4 var(--mono); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  h2 { margin: 0; font: 700 22px/1.25 var(--body); text-wrap: balance; }
+  section { display: grid; gap: 14px; }
+  section > p { margin: 0; max-width: 65ch; }
+  .key { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .key-wrap { overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; }
+  .key th, .key td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .key tr:last-child td { border-bottom: 0; }
+  .key th { font: 600 12px/1.2 var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); background: transparent; }
+  .key td:first-child { width: 46%; }
+  .key .t { font: 400 13px/1.5 var(--mono); color: var(--ink-soft); white-space: nowrap; display: block; }
+  code { font: 400 .88em/1 var(--mono); color: var(--purple); }
+  .note { margin: 0; padding: 12px 14px; border-left: 3px solid var(--orange); background: var(--sheet); border-radius: 0 6px 6px 0; max-width: 70ch; font-size: 15px; }
+  .made { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 28px; }
+  .made p { margin: 0; font-size: 15px; color: var(--ink-soft); min-width: 0; }
+  .made b { color: var(--ink); font-weight: 600; }
+  a { color: var(--blue); text-underline-offset: 3px; }
+  a:focus-visible, video:focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+</style>
+
+<main class="page">
+  <header>
+    <span class="kicker">A 66-second Qwik cartoon</span>
+    <h1><span class="js">JavaScript</span> Streaming</h1>
+    <p class="lede">Bolt, the Qwik logo with rubber-hose arms and legs, renders a page on the server, streams the HTML to the
+      browser in pieces, then streams the page's JavaScript in the background. When a click needs code that hasn't arrived
+      yet, Bolt holds on to the click and sends that code first.</p>
+  </header>
+
+  <div class="film">
+    <video id="film" controls playsinline preload="metadata" poster="poster.jpg">
+      <source src="video.mp4" type="video/mp4">
+    </video>
+    <div class="meta"><span>1:06</span><span>1280 × 720, 24 fps</span><span>with sound</span></div>
+  </div>
+
+  <section>
+    <h2>What the pictures stand for</h2>
+    <div class="key-wrap">
+      <table class="key">
+        <thead><tr><th>In the film</th><th>In Qwik</th></tr></thead>
+        <tbody>
+          <tr><td><span class="t">0:06</span>Bolt builds the page on a board in a server tower</td><td>Server-side rendering</td></tr>
+          <tr><td><span class="t">0:10</span>Finished parts leave in orange HTML parcels while Bolt keeps building</td><td>The HTML is flushed in chunks as it renders</td></tr>
+          <tr><td><span class="t">0:12</span>The database is asleep, so a grey skeleton card goes out instead</td><td>A <code>&lt;Pending&gt;</code> boundary streams its fallback and the rest of the page carries on</td></tr>
+          <tr><td><span class="t">0:20</span>The reviews arrive later in a sealed envelope and swap into the grey slot</td><td>Out-of-order streaming: a <code>&lt;template&gt;</code> arrives late and a tiny script swaps it in</td></tr>
+          <tr><td><span class="t">0:28</span>Yellow JS boxes wait in line, one per button, most likely first</td><td>The preloader's queue of JavaScript segments, sorted by probability</td></tr>
+          <tr><td><span class="t">0:30</span>Snails carry the boxes, two at a time, and Bolt shelves them shut</td><td>Background preloads, a few in flight at once; modules are fetched but nothing runs</td></tr>
+          <tr><td><span class="t">0:36</span>A click becomes a gold spark; the like code is on the shelf, so it works at once</td><td>qwikloader catches the event; buffered code runs right away</td></tr>
+          <tr><td><span class="t">0:40</span>The cart cubby is empty, so Bolt keeps the spark in its fist</td><td>qwikloader holds the event until the code arrives</td></tr>
+          <tr><td><span class="t">0:44</span>Bolt's arm stretches back down the line and sends the cart box now</td><td>The clicked code is requested right away, ahead of the idle queue</td></tr>
+          <tr><td><span class="t">0:48</span>The cart snail is no faster; the clock spins while Bolt waits</td><td>The network doesn't speed up; the code just started sooner</td></tr>
+          <tr><td><span class="t">0:51</span>The spark goes into the button and the cart badge ticks to 1</td><td>The handler runs with the original event</td></tr>
+          <tr><td><span class="t">0:54</span>The other snails, which never stopped, bring the rest</td><td>Preloading carries on</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Out-of-order streaming with <code>&lt;Pending&gt;</code> is experimental in Qwik v2 (it needs
+      <code>experimental: ['pendingBoundary']</code>). By default Qwik streams in order, flushing what it has before it waits.</p>
+  </section>
+
+  <section>
+    <h2>How it was made</h2>
+    <div class="made">
+      <p><b>Pictures.</b> Every frame is painted in code with p5.js and p5.brush, then rendered in headless Chrome. The
+        animation kit is John Heibel's <a href="https://github.com/JohnHeibel/ClaudeAnimationBase">ClaudeAnimationBase</a>.</p>
+      <p><b>Sound.</b> The music and the 75 sound effects are synthesized in plain Node: plucked strings, marimba,
+        glockenspiel, soft drums, no samples.</p>
+      <p><b>Story.</b> Each picture was checked against the Qwik v2 source: the preloader queue, qwikloader and the
+        out-of-order executor.</p>
+    </div>
+  </section>
+</main>
