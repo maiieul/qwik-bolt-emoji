@@ -5,15 +5,15 @@ Paths are in the Qwik v2 monorepo (QwikDev/qwik, main).
 I read the source for all six questions. The biggest finding: Qwik v2 does have real out-of-order streaming, but it's experimental. The usual "qwikloader tells the preloader to bump the clicked chunk" story is not what the code currently does.
 
 **Files cited below** (short names used in citations):
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/qwikloader.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/out-of-order-executor-shared.ts`, `backpatch-executor-shared.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/server/` → `ssr-container.ts`, `ssr-render.ts`, `ssr-stream-handler.ts`, `preload-impl.ts`, `types.ts`, `preloading.md` (an internal design note)
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/core/ssr/` → `ssr-render-jsx.ts`, `ssr-events.ts`, `out-of-order-segment-swap.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/core/control-flow/` → `pending.tsx`, `reveal.tsx`, `pending-utils.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/core/preloader/` → `queue.ts`, `bundle-graph.ts` (called "core bundle-graph" below), `bridge.ts`, `constants.ts`, `index.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik/src/core/shared/qrl/qrl-class.ts`, `.../core/shared/serdes/qrl-to-string.ts`, `.../core/client/run-qrl.ts`, `.../core/client/dom-container.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik-vite/src/plugins/bundle-graph.ts` (called "vite bundle-graph"), `.../qwik-vite/src/manifest.ts`, `.../qwik-vite/src/plugins/plugin.ts`
-- `/Users/maieul/dev/work/qwik-v2/.claude/worktrees/funny-leakey-618321/packages/qwik-router/src/runtime/src/create-renderer.ts`, `link-prefetch.ts`
+- `packages/qwik/src/qwikloader.ts`
+- `packages/qwik/src/out-of-order-executor-shared.ts`, `backpatch-executor-shared.ts`
+- `packages/qwik/src/server/` → `ssr-container.ts`, `ssr-render.ts`, `ssr-stream-handler.ts`, `preload-impl.ts`, `types.ts`, `preloading.md` (an internal design note)
+- `packages/qwik/src/core/ssr/` → `ssr-render-jsx.ts`, `ssr-events.ts`, `out-of-order-segment-swap.ts`
+- `packages/qwik/src/core/control-flow/` → `pending.tsx`, `reveal.tsx`, `pending-utils.ts`
+- `packages/qwik/src/core/preloader/` → `queue.ts`, `bundle-graph.ts` (called "core bundle-graph" below), `bridge.ts`, `constants.ts`, `index.ts`
+- `packages/qwik/src/core/shared/qrl/qrl-class.ts`, `.../core/shared/serdes/qrl-to-string.ts`, `.../core/client/run-qrl.ts`, `.../core/client/dom-container.ts`
+- `packages/qwik-vite/src/plugins/bundle-graph.ts` (called "vite bundle-graph"), `.../qwik-vite/src/manifest.ts`, `.../qwik-vite/src/plugins/plugin.ts`
+- `packages/qwik-router/src/runtime/src/create-renderer.ts`, `link-prefetch.ts`
 
 ---
 

@@ -1,21 +1,26 @@
 {
-  "name": "qwik-mascot-video",
-  "version": "0.1.0",
+  "name": "qwik-mascott",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "description": "A short painted explainer of Qwik's JavaScript streaming, starring the Qwik bolt",
+  "description": "Bolt, the Qwik mascot: a painted explainer film of Qwik's JavaScript streaming and a Discord emoji set, built on ClaudeAnimationBase",
   "type": "module",
-  "dependencies": {
-    "ffmpeg-static": "^5.2.0",
-    "p5": "^2.3.3",
-    "p5.brush": "^2.2.3",
-    "puppeteer-core": "^25.11.0",
-    "sharp": "^0.35.4"
-  },
   "scripts": {
     "audio": "node audio/make.mjs && node audio/intro.mjs && node audio/verify.mjs",
     "frames": "node render.mjs --frames --workers=5",
     "export": "node tools/export.mjs",
-    "video": "npm run audio && npm run frames && npm run export"
+    "video": "npm run audio && npm run frames && npm run export",
+    "build": "node export_svg.mjs && node svg_to_gif.mjs && node pack.mjs",
+    "check": "node export_svg.mjs && node svg_to_gif.mjs && node pack.mjs --check",
+    "painted": "node encode_emoji.mjs",
+    "page": "node build_page.mjs"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "gifenc": "^1.0.3",
+    "p5": "^2.3.3",
+    "p5.brush": "^2.2.3",
+    "puppeteer-core": "^25.11.0",
+    "sharp": "^0.35.4"
   }
 }

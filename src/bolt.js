@@ -10,12 +10,32 @@ const BOLT = [[1.112, -7.952], [-7.475, -16.301], [-6.554, -9.952], [-8.555, -7.
 const BOLT_R = [.5, .6, .3, .5, .6, .3];
 const BODY_CX = -3.72, BODY_CY = -8.15;
 const FACE = { x: -3.72, y: -8.1 };
-const FACE_SPREAD = .3, MOUTH_SIZE = [1, 1.3], EYE_X = 2.1;
-const EYE_FIT = {
-  normal: { w: 2.3, h: 1.05, y: -5.9 }, look: { w: 1.75, h: 1, y: -5.6 }, wide: { w: 1.8, h: .78, y: -5.9 },
-  happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 2.2, h: 2, y: -6.3, x: 2.35 }, white: { w: 1.3, h: 1.05, y: -6.1 },
-  x: { w: 1.05, h: .85, y: -5.83, x: 1.85, ink: 1.7 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 1.8, h: 1.45, y: -6.15, x: 2.28 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
+// Two face profiles: the emoji's big faces that read at 22 px, and the film's smaller ones. A page picks one by setting
+// window.BOLT_FACE = 'film' before this script loads; the default is 'emoji'.
+const FACE_PROFILES = {
+  emoji: {
+    spread: .6, mouthX: .45, mouthSize: [2.1, 2.4], mouthInk: 2, rimmed: true, laserStar: [2.9, 1.7], sobInk: 1.6,
+    browsUp: [[3.1, -7.9], [2.2, -8.55], [1.2, -8.3]], browsUpInk: 1.4, browsAngry: [[3.9, -7.8], [2.4, -7.3], [.8, -6.85]],
+    eyes: {
+      normal: { w: 4.2, h: 1.95, y: -6.1, x: 2.45, ink: 1.4, round: true }, look: { w: 3.5, h: 2, y: -5.3, round: true }, wide: { w: 3.6, h: 1.56, y: -6.1, x: 2.55, round: true },
+      happy: { w: 1.8, h: 1.9, y: -6.95, x: 2.6, ink: 1.75, round: true }, sad: { w: 3.2, h: 2.3, y: -6.3, x: 2.45, round: true }, angry: { w: 3.1, h: 2, y: -6.1, x: 2.45, round: true },
+      heart: { w: 2.2, h: 2, y: -6.3, x: 2.35 }, white: { w: 2.3, h: 1.85, y: -6.1, x: 2.4 }, x: { w: 1.3, h: 2.1, y: -5.95, x: 1.85, ink: 1.7 }, red: { w: 2.2, h: 1.5, y: -6.1, x: 2.45 },
+      sleepy: { w: 2.6, h: 2.2, y: -6.4, x: 2.45, ink: 1.6, round: true }, cry: { w: 2.1, x: 2.35 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
+    },
+  },
+  film: {
+    spread: .3, mouthX: 0, mouthSize: [1, 1.3], mouthInk: 1, rimmed: false, laserStar: [2.3, 1.35], laserAt: [2.1, -6], sobInk: 1.35,
+    browsUp: [[2.35, -7.45], [1.7, -7.95], [1, -7.6]], browsUpInk: 1.3, browsAngry: [[2.35, -7.35], [1.65, -7.05], [.85, -6.7]],
+    eyes: {
+      normal: { w: 2.3, h: 1.05, y: -5.9 }, look: { w: 1.75, h: 1, y: -5.6 }, wide: { w: 1.8, h: .78, y: -5.9 },
+      happy: { w: 1.65, h: 1.2, y: -6.6, ink: 1.35 }, sad: { w: 2.1, h: 1.35, y: -6.2, x: 1.9 }, angry: { w: 1.75, h: 1.1 }, heart: { w: 2.2, h: 2, y: -6.3, x: 2.35 }, white: { w: 1.3, h: 1.05, y: -6.1 },
+      x: { w: 1.05, h: .85, y: -5.83, x: 1.85, ink: 1.7 }, red: { w: 1.7, h: 1, y: -5.9 }, sleepy: { w: 1.8, h: 1.45, y: -6.15, x: 2.28 }, cry: { w: 1.7 }, shades: { w: 1.4, h: 1.25, x: 2.85 },
+    },
+  },
 };
+const FACE_PROFILE = FACE_PROFILES[window.BOLT_FACE] || FACE_PROFILES.emoji;
+const FACE_SPREAD = FACE_PROFILE.spread, MOUTH_X = FACE_PROFILE.mouthX, MOUTH_SIZE = FACE_PROFILE.mouthSize, MOUTH_INK = FACE_PROFILE.mouthInk, EYE_X = 2.1;
+const EYE_FIT = FACE_PROFILE.eyes;
 const eyeFit = kind => ({ x: EYE_X, ...EYE_FIT[kind] });
 
 function roundedPts(P, R, n = 5) {
@@ -58,8 +78,8 @@ function insetPts(P, d) {
 }
 const scalePts = (P, u) => P.map(([x, y]) => [x * u, y * u]);
 const shiftLine = ([a, b], [dx, dy]) => [[a[0] + dx, a[1] + dy], [b[0] + dx, b[1] + dy]];
-function drawShifted(dy, draw) {
-  push(); translate(0, dy); draw(); pop();
+function drawShifted(dy, draw, dx = 0) {
+  push(); translate(dx, dy); draw(); pop();
 }
 function drawEachScaled(k, draw) {
   const [paintFlat, inkLineFlat] = [paint, inkLine];
@@ -70,6 +90,24 @@ function drawEachScaled(k, draw) {
   paint = (pts, o) => paintFlat(inPlace(pts), o);
   inkLine = (pts, ...rest) => inkLineFlat(inPlace(pts), ...rest);
   try { draw(); } finally { paint = paintFlat; inkLine = inkLineFlat; }
+}
+function drawRimmed(col, rim, draw) {
+  if (!FACE_PROFILE.rimmed) return draw();
+  const [paintFlat, inkLineFlat] = [paint, inkLine];
+  paint = (pts, o = {}) => {
+    if (!o.wash && !o.ink) return;
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), r = rim + (o.ink === null ? 0 : (o.sw ?? 1) * 3);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)], cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const kx = 1 + 2 * r / Math.max(x1 - x0, 1), ky = 1 + 2 * r / Math.max(y1 - y0, 1);
+    paintFlat(pts.map(([x, y]) => [cx + (x - cx) * kx, cy + (y - cy) * ky]), { wash: col, ink: null, curv: o.curv });
+  };
+  inkLine = (pts, sw = 1) => {
+    const w = sw * 5.4 + 2 * rim;
+    paintFlat(ribbon(pts, w), { wash: col, ink: null });
+    for (const [x, y] of [pts[0], pts[pts.length - 1]]) paintFlat(ellPts(x, y, w / 2, w / 2, 16), { wash: col, ink: null });
+  };
+  try { draw(); } finally { paint = paintFlat; inkLine = inkLineFlat; }
+  draw();
 }
 
 function boltTones(o) {
@@ -144,13 +182,14 @@ function bolt(x, y, u, o = {}) {
     push(); translate(FACE.x * u, (FACE.y + 6) * u);
     const spread = FACE_SPREAD * u, [mouthW, mouthH] = o.mouthSize ?? MOUTH_SIZE;
     if (o.blush) drawShifted(spread, () => blush(u, sw, { sides: [-1, 1], bx: EYE_X - .2 }, o.blush === true ? 1 : o.blush));
-    if (o.sob != null) sobFace(u, sw, o.sob, cycles(1.5));
-    else { rs('eyes'); eyes(u, { ...o, eyeFit }, sw, [-1, 1], 0); }
-    if (o.brows) brows(u, sw, o.brows);
+    if (o.sob != null) sobFace(u, sw, o.sob, cycles(1.5), tones.white.col);
+    else if (o.eyes === 'heart' || o.eyes === 'shades') { rs('eyes'); eyes(u, { ...o, eyeFit }, sw, [-1, 1], 0); }
+    else { rs('eyes'); drawRimmed(tones.white.col, .25 * u, () => eyes(u, { ...o, eyeFit }, sw, [-1, 1], 0)); }
+    if (o.brows) drawRimmed(tones.white.col, .25 * u, () => brows(u, sw, o.brows));
     rs('mouth');
     drawShifted((o.mouthDy || 0) * u + spread, () =>
-      drawScaled(mouthW, mouthH, () => mouth(u, o.mouth ?? (o.lid > .1 ? 'wail' : null), sw, o.mouthK ?? 1), [0, -4.9 * u]));
-    if (o.mustache) drawShifted(spread + .2 * u, () => drawScaled(.8, 1, () => mustache(u, sw)));
+      drawScaled(mouthW, mouthH, () => mouth(u, o.mouth ?? (o.lid > .1 ? 'wail' : null), sw * MOUTH_INK, o.mouthK ?? 1), [0, -4.9 * u]), MOUTH_X * u);
+    if (o.mustache) drawShifted(spread + .2 * u, () => drawRimmed(tones.white.col, .25 * u, () => drawScaled(.8, 1, () => mustache(u, sw))), MOUTH_X * u);
     if (o.shades) shades(u, sw, o.shades);
     for (const h of o.hands || []) hand(u, sw, h, tones.white.col);
     for (const h of o.thumbs || []) thumbUp(u, sw, h, tones.white.col);
@@ -199,13 +238,13 @@ function windArcs(u, sw, k, phase) {
 }
 
 function laserEyes(u, k, flick) {
-  const P = pts => pts.map(([a, b]) => [a * u, b * u]), w = k * (1 + .2 * flick);
+  const P = pts => pts.map(([a, b]) => [a * u, b * u]), w = k * (1 + .2 * flick), [x, y] = FACE_PROFILE.laserAt || [eyeFit('red').x, eyeFit('red').y];
   for (const s of [-1, 1]) {
-    const eye = [s * EYE_X, -6], far = [s * 24, 2.5], mid = [lerp(eye[0], far[0], .5), lerp(eye[1], far[1], .5)];
+    const eye = [s * x, y], far = [s * 24, 2.5], mid = [lerp(eye[0], far[0], .5), lerp(eye[1], far[1], .5)];
     paint(ribbon(P([eye, mid, far]), .9 * w * u, 3.4 * w * u), { wash: '#FF2A3D', ink: null });
     paint(ribbon(P([eye, mid, far]), .32 * w * u, 1.3 * w * u), { wash: '#FFE4E7', ink: null });
-    paint(starPts(eye[0] * u, eye[1] * u, 2.3 * w * u, .24, 4, .35 + .35 * flick), { wash: '#FF2A3D', ink: null });
-    paint(starPts(eye[0] * u, eye[1] * u, 1.35 * w * u, .3, 4, .35 + .35 * flick), { wash: '#FFF3F4', ink: null });
+    paint(starPts(eye[0] * u, eye[1] * u, FACE_PROFILE.laserStar[0] * w * u, .24, 4, .35 + .35 * flick), { wash: '#FF2A3D', ink: null });
+    paint(starPts(eye[0] * u, eye[1] * u, FACE_PROFILE.laserStar[1] * w * u, .3, 4, .35 + .35 * flick), { wash: '#FFF3F4', ink: null });
   }
 }
 
@@ -241,10 +280,11 @@ function mustache(u, sw) {
 
 function brows(u, sw, k = 1) {
   if (k === 'up') {
-    for (const s of [-1, 1]) inkLine([[s * 2.35 * u, -7.45 * u], [s * 1.7 * u, -7.95 * u], [s * u, -7.6 * u]], sw * 1.3, PAL.ink, 'ink', .6);
+    for (const s of [-1, 1]) inkLine(FACE_PROFILE.browsUp.map(([bx, by]) => [s * bx * u, by * u]), sw * FACE_PROFILE.browsUpInk, PAL.ink, 'ink', .6);
     return;
   }
-  for (const s of [-1, 1]) inkLine([[s * 2.35 * u, -7.35 * u], [s * 1.65 * u, (-7.05 + .1 * k) * u], [s * .85 * u, (-6.7 + .25 * k) * u]], sw * 1.5, PAL.ink, 'ink', .4);
+  const [b0, b1, b2] = FACE_PROFILE.browsAngry;
+  for (const s of [-1, 1]) inkLine([[s * b0[0] * u, b0[1] * u], [s * b1[0] * u, (b1[1] + .1 * k) * u], [s * b2[0] * u, (b2[1] + .25 * k) * u]], sw * 1.5, PAL.ink, 'ink', .4);
 }
 
 function thumbUp(u, sw, { x, y, rot = 0, side = 1, k = 1, arm = 0 }, col) {
@@ -258,7 +298,7 @@ function thumbUp(u, sw, { x, y, rot = 0, side = 1, k = 1, arm = 0 }, col) {
   pop();
 }
 
-function sobFace(u, sw, sob, flow) {
+function sobFace(u, sw, sob, flow, rim) {
   const P = pts => pts.map(([a, b]) => [a * u, b * u]);
   const along = (path, f) => { const i = Math.min(path.length - 2, Math.floor(f * (path.length - 1))), k = f * (path.length - 1) - i; return [lerp(path[i][0], path[i + 1][0], k), lerp(path[i][1], path[i + 1][1], k)]; };
   for (const s of [-1, 1]) {
@@ -273,8 +313,8 @@ function sobFace(u, sw, sob, flow) {
       const f = frac(flow + j / 2), q = arcPt(end, [end[0] + s * 2, end[1] + 1.7], 1, f), r = .42 * (1 - .45 * f);
       paint(ellPts(q[0] * u, q[1] * u, r * u, r * 1.3 * u, 10), { wash: PAL.sky, ink: PAL.ink, sw: sw * .35 });
     }
-    const half = .95 * EYE_FIT.cry.w;
-    inkLine(P([[s * EYE_X - half, -5.75], [s * EYE_X, -6.3 + .12 * sob], [s * EYE_X + half, -5.75]]), sw * 1.35, PAL.ink, 'ink', .5);
+    const { x, w } = eyeFit('cry'), half = .95 * w;
+    drawRimmed(rim, .25 * u, () => inkLine(P([[s * x - half, -5.75], [s * x, -6.3 + .12 * sob], [s * x + half, -5.75]]), sw * FACE_PROFILE.sobInk, PAL.ink, 'ink', .5));
   }
 }
 
